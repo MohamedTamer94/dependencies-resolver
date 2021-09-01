@@ -45,8 +45,6 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -140,9 +138,8 @@ public class DependencyResolver {
    * @return a {@link Dependency} for the xml node or null if the dependency node is bad, or if the
    *     dependency is a test dependency
    */
-  @Nullable
   private static Dependency getDependency(
-      @Nonnull Node dependencyNode, List<ProjectProperty> properties, @Nullable Dependency parent) {
+      Node dependencyNode, List<ProjectProperty> properties, Dependency parent) {
     if (!dependencyNode.getNodeName().equals("dependency")
         && !dependencyNode.getNodeName().equals("parent")) {
       System.err.println(
@@ -227,7 +224,7 @@ public class DependencyResolver {
    * @param callback the callback to call when the resolving is complete
    * @throws IOException if any resolver throws an IOException
    */
-  public void resolveDependencies(Dependency dependency, @Nullable ResolveCallback callback)
+  public void resolveDependencies(Dependency dependency, ResolveCallback callback)
       throws IOException {
     this.callback = callback;
     this.artifactFound = false;
@@ -403,7 +400,8 @@ public class DependencyResolver {
         if (!outputFile.exists()) {
           // download and save the file first
           ReadableByteChannel rbc = Channels.newChannel(url.openStream());
-          // if reach to here with no FileNotFoundException, so the POM file was found in this repo
+          // if we reached here with no FileNotFoundException, so the POM file was found in this
+          // repo
           System.out.println("Downloading " + repo + pomDownloadUrl);
           FileOutputStream fos = new FileOutputStream(outputFile);
           fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);

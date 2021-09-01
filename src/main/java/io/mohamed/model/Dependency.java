@@ -25,9 +25,6 @@
 
 package io.mohamed.model;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 /**
  * A class to represent a maven dependency
  * a maven dependency is represented in POM XML files as:
@@ -65,11 +62,11 @@ public class Dependency {
    * @param scope the dependency's scope, or null for the default scope
    */
   public Dependency(
-      @Nonnull String groupId,
-      @Nonnull String artifactId,
-      @Nonnull String version,
-      @Nullable String type,
-      @Nullable String scope) {
+      String groupId,
+      String artifactId,
+      String version,
+      String type,
+      String scope) {
     this.groupId = groupId;
     this.artifactId = artifactId;
     this.version = version;
@@ -138,7 +135,6 @@ public class Dependency {
   }
 
   /** @return the dependency repository url, or null if it wasn't specified */
-  @Nullable
   public Repository getRepository() {
     return repository;
   }
