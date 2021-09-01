@@ -20,12 +20,35 @@ configurations.all {
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
-    implementation 'org.apache.maven.shared:maven-invoker:2.2'
     implementation 'commons-io:commons-io:2.11.0'
     implementation 'commons-cli:commons-cli:1.4'
-    implementation gradleApi()
 }
 
 test {
     useJUnitPlatform()
+}
+
+def mainClassName = "io.mohamed.Main"
+
+jar {
+    manifest {
+        attributes "Main-Class": "$mainClassName"
+    }
+}
+
+task fatJar(type: Jar) {
+    manifest.from jar.manifest
+    classifier = 'all'
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    } {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+    }
+    with jar
+}
+
+artifacts {
+    archives fatJar
 }
