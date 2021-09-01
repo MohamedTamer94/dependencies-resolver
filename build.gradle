@@ -1,0 +1,31 @@
+plugins {
+    id 'java'
+}
+
+group 'io.mohamed.resolver'
+version '1.0'
+description = 'A CLI to resolve and download dependencies for the given artifact'
+
+repositories {
+    mavenCentral()
+    google()
+}
+
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.work:work-runtime:2.7.0-alpha05'
+    }
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+    implementation 'org.apache.maven.shared:maven-invoker:2.2'
+    implementation 'commons-io:commons-io:2.11.0'
+    implementation 'commons-cli:commons-cli:1.4'
+    implementation gradleApi()
+}
+
+test {
+    useJUnitPlatform()
+}
