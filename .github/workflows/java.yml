@@ -21,7 +21,9 @@ jobs:
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
       - name: Build with Gradle
-        run: ./gradlew fatJar
+        run: |
+         chmod +x gradlew
+        ./gradlew fatJar
       - name: Commit Updated JAR
         uses: actions/checkout@v2
         with:
