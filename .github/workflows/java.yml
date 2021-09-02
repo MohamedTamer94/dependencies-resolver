@@ -24,6 +24,10 @@ jobs:
         run: |
          chmod +x gradlew
          ./gradlew fatJar
+      - name: Move Generated Jar
+        run : |
+          mv build/libs/*-all.jar .
+          ls
       - name: Commit Updated JAR
         uses: EndBug/add-and-commit@v7 # You can change this to use a specific version.
         with:
