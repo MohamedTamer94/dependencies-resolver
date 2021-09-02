@@ -263,6 +263,9 @@ public class DependencyResolver {
               if (!artifactFound) {
                 if (repoIndex > (COMMON_MAVEN_REPOSITORIES.size() - 1)) {
                   this.artifactFound = false;
+                  this.pomDownloadUrl = pomUrl;
+                  this.dependencies = dependencies;
+                  this.mavenRepo = mavenRepo;
                   finishResolve(dependency1);
                 } else {
                   repoIndex++;
