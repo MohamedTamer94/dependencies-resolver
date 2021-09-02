@@ -31,9 +31,11 @@ import io.mohamed.callback.ResolveCallback;
 import io.mohamed.model.Dependency;
 import io.mohamed.model.ProjectProperty;
 import io.mohamed.model.Repository;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -48,6 +50,8 @@ import java.util.regex.Pattern;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import org.jsoup.Jsoup;
+import org.jsoup.select.Elements;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -81,32 +85,13 @@ public class DependencyResolver {
   // a flag to indicate that we have finished resolving dependencies
   private boolean done = false;
 
-  /**
-   * Replaces the property name declaration in property name with the property value ( if any )
-   *
-   * @param properties the dependency's project properties
-   * @param str the dependency version string
-   * @return the cleaned up version
-   */
-  private static String replacePropertyWithValue(List<ProjectProperty> properties, String str) {
-    Pattern p = Pattern.compile(".*\\$\\{.*}.*");
-    // create matcher for pattern p and given string
-    Matcher m = p.matcher(str);
-    // if an occurrence if a pattern was found in a given string...
-    if (m.find()) {
-      String propertyName = str.replaceAll("(.*)\\$\\{([^&]*)}(.*)", "$1$2$3");
-      for (ProjectProperty projectProperty : properties) {
-        if (projectProperty.getName().equals(propertyName)) {
-          str = projectProperty.getValue();
-        }
-      }
+  public static boolean isNumeric(String str) {
+    try {
+      Double.parseDouble(str);
+      return true;
+    } catch (NumberFormatException e) {
+      return false;
     }
-    p = Pattern.compile("\\[.*]");
-    m = p.matcher(str);
-    if (!m.find()) {
-      return str;
-    }
-    return str.replaceAll("\\[(.*)]", "$1");
   }
 
   /**
@@ -130,6 +115,87 @@ public class DependencyResolver {
   }
 
   /**
+   * Replaces the property name declaration in property name with the property value ( if any )
+   *
+   * @param properties the dependency's project properties
+   * @param str the dependency version string
+   * @return the cleaned up version
+   */
+  private String parseVersion(
+      List<ProjectProperty> properties,
+      String str,
+      String groupID,
+      String artifactId,
+      Repository repository) {
+    Pattern p = Pattern.compile(".*\\$\\{.*}.*");
+    // create matcher for pattern p and given string
+    Matcher m = p.matcher(str);
+    // if an occurrence if a pattern was found in a given string...
+    if (m.find()) {
+      String propertyName = str.replaceAll("(.*)\\$\\{([^&]*)}(.*)", "$1$2$3");
+      for (ProjectProperty projectProperty : properties) {
+        if (projectProperty.getName().equals(propertyName)) {
+          str = projectProperty.getValue();
+        }
+      }
+    }
+    p = Pattern.compile("\\[.*]");
+    m = p.matcher(str);
+    if (!m.find()) {
+      return str;
+    }
+    str = str.replaceAll("\\[(.*)]", "$1");
+    if (str.contains(",")) {
+      String startVersion = str.split(",")[0].trim();
+      String endVersion = str.split(",")[1].trim();
+      try {
+        URL url = new URL(repository.getUrl() + groupID + "/" + artifactId);
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(url.openStream()));
+
+        StringBuilder stringBuilder = new StringBuilder();
+
+        String inputLine;
+        while ((inputLine = bufferedReader.readLine()) != null) {
+          stringBuilder.append(inputLine);
+          stringBuilder.append(System.lineSeparator());
+        }
+
+        bufferedReader.close();
+        String html = stringBuilder.toString().trim();
+        org.jsoup.nodes.Document document = Jsoup.parse(html);
+        Elements elements = document.select("a");
+        List<String> versions = new ArrayList<>();
+        for (org.jsoup.nodes.Element element : elements) {
+          String href = element.attr("href");
+          if (href.endsWith("/") && !href.equals("../")) {
+            versions.add(href.substring(0, href.length() - 1));
+          }
+        }
+        String preferredVersion = null;
+        for (String version : versions) {
+          System.out.println(
+              version
+                  + " compared to "
+                  + startVersion
+                  + " == "
+                  + compareVersions(version, startVersion));
+          if (compareVersions(version, startVersion) == 1) {
+            if (compareVersions(version, endVersion) == -1) {
+              preferredVersion = version;
+              break;
+            }
+          }
+        }
+        if (preferredVersion != null) return startVersion;
+      } catch (IOException e) {
+        // the repository doesn't support listing files
+        return startVersion;
+      }
+    }
+    return str;
+  }
+
+  /**
    * Returns a {@link Dependency} for the given dependency XML node
    *
    * @param dependencyNode the node to parse
@@ -138,8 +204,11 @@ public class DependencyResolver {
    * @return a {@link Dependency} for the xml node or null if the dependency node is bad, or if the
    *     dependency is a test dependency
    */
-  private static Dependency getDependency(
-      Node dependencyNode, List<ProjectProperty> properties, Dependency parent) {
+  private Dependency getDependency(
+      Node dependencyNode,
+      List<ProjectProperty> properties,
+      Dependency parent,
+      Repository repository) {
     if (!dependencyNode.getNodeName().equals("dependency")
         && !dependencyNode.getNodeName().equals("parent")) {
       System.err.println(
@@ -179,12 +248,12 @@ public class DependencyResolver {
     String scope = "runtime";
     String type = "jar";
     if (groupIDNode != null) {
-      groupId = replacePropertyWithValue(properties, groupIDNode.getTextContent());
+      groupId = groupIDNode.getTextContent();
     } else {
       System.err.println("No groupId found for dependency!");
     }
     if (artifactIdNode != null) {
-      artifactId = replacePropertyWithValue(properties, artifactIdNode.getTextContent());
+      artifactId = artifactIdNode.getTextContent();
     } else {
       System.err.println("No artifactId found for dependency " + groupId);
     }
@@ -196,7 +265,8 @@ public class DependencyResolver {
       }
     }
     if (versionNode != null) {
-      version = replacePropertyWithValue(properties, versionNode.getTextContent());
+      version =
+          parseVersion(properties, versionNode.getTextContent(), groupId, artifactId, repository);
     } else {
       // make sure no parent has defined the version for this artifact before
       for (Entry<Dependency, Dependency> dependency : loadedDependencies.entrySet()) {
@@ -215,6 +285,17 @@ public class DependencyResolver {
       type = typeNode.getTextContent();
     }
     return new Dependency(groupId, artifactId, version, type, scope);
+  }
+
+  private int compareVersions(String version1, String version2) {
+    if (isNumeric(version1) && isNumeric(version2)) {
+      double version1Num = Integer.parseInt(version1);
+      double version2Num = Integer.parseInt(version2);
+      return version1Num >= version2Num ? 1 : (version1Num == version2Num ? 0 : -1);
+    } else {
+      int compareToResult = version1.compareToIgnoreCase(version2);
+      return Integer.compare(compareToResult, 0);
+    }
   }
 
   /**
@@ -265,7 +346,6 @@ public class DependencyResolver {
                   this.artifactFound = false;
                   this.pomDownloadUrl = pomUrl;
                   this.dependencies = dependencies;
-                  this.mavenRepo = mavenRepo;
                   finishResolve(dependency1);
                 } else {
                   repoIndex++;
@@ -306,6 +386,7 @@ public class DependencyResolver {
     } else {
       dependency.setRepository(mavenRepo);
       if (!loadedDependencies.containsValue(dependency)) {
+        System.out.println("Adding dependency " + dependency);
         loadedDependencies.put(dependency, dependency);
       }
       // the artifact's POM was parsed successfully
@@ -432,7 +513,7 @@ public class DependencyResolver {
               break;
             case "parent":
               // we must load the parent first to get the defined versions ( if any ) !
-              Dependency resolvedDependency = getDependency(node, properties, parent);
+              Dependency resolvedDependency = getDependency(node, properties, parent, repo);
               if (resolvedDependency != null) {
                 parent = resolvedDependency;
                 resolveDependencies(resolvedDependency, DependencyResolver.this.callback);
@@ -446,7 +527,7 @@ public class DependencyResolver {
                     Node dependencyNode = node.getChildNodes().item(y);
                     if (dependencyNode.getNodeName().equals("dependency")) {
                       Dependency resolvedDependency1 =
-                          getDependency(dependencyNode, properties, parent);
+                          getDependency(dependencyNode, properties, parent, repo);
                       if (resolvedDependency1 != null) {
                         dependencies.add(resolvedDependency1);
                         loadedDependencies.put(dependency, resolvedDependency1);
@@ -461,7 +542,7 @@ public class DependencyResolver {
                 Node dependencyNode = node.getChildNodes().item(x);
                 if (dependencyNode.getNodeName().equals("dependency")) {
                   Dependency resolvedDependency1 =
-                      getDependency(dependencyNode, properties, parent);
+                      getDependency(dependencyNode, properties, parent, repo);
                   if (resolvedDependency1 != null) {
                     dependencies.add(resolvedDependency1);
                     loadedDependencies.put(dependency, resolvedDependency1);
