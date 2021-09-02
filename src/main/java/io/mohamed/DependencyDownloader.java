@@ -30,6 +30,7 @@ import io.mohamed.callback.FilesDownloadedCallback;
 import io.mohamed.model.Dependency;
 import io.mohamed.model.Repository;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
@@ -151,11 +152,18 @@ public class DependencyDownloader {
           interrupt();
           return;
         }
-        URL fileDownloadUrl = new URL(repository.getUrl() + fileDownloadPath);
-        try (ReadableByteChannel rbc = Channels.newChannel(fileDownloadUrl.openStream())) {
-          System.out.println("Downloading " + fileDownloadUrl);
-          try (FileOutputStream fos = new FileOutputStream(outputFile)) {
-            fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+        URL fileDownloadUrl = null;
+        for (Repository repository : Repository.COMMON_MAVEN_REPOSITORIES) {
+          try {
+            fileDownloadUrl = new URL(repository.getUrl() + fileDownloadPath);
+            try (ReadableByteChannel rbc = Channels.newChannel(fileDownloadUrl.openStream())) {
+              System.out.println("Downloading " + fileDownloadUrl);
+              try (FileOutputStream fos = new FileOutputStream(outputFile)) {
+                fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+                break;
+              }
+            }
+          } catch (FileNotFoundException ignored) {
           }
         }
         System.out.println("Downloaded " + fileDownloadUrl);
