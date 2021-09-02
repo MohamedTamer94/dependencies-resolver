@@ -409,10 +409,11 @@ public class DependencyResolver {
     }
     // keep track of running threads by removing all dead threads
     try {
-      resolverThreads.removeIf(thread -> thread != null && !thread.isAlive());
+      resolverThreads.removeIf(thread -> thread == null || !thread.isAlive());
     } catch (ConcurrentModificationException ignored) {
     }
-    if (resolverThreads.size() == 1) { // only the current thread is running
+    System.out.println(resolverThreads.size());
+    if (resolverThreads.size() <= 1) { // only the current thread is running
       done = true; // disallow any further methods to be executed
       if (callback != null) {
         callback.done(
