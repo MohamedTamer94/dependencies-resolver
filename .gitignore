@@ -1,5 +1,4 @@
-# Gradle Files
-gradle/
+# Gradle Directories
 build/
 .gradle/
 # IDE files
