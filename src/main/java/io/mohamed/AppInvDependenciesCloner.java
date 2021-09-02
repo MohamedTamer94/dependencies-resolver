@@ -18,9 +18,11 @@ public class AppInvDependenciesCloner {
       File[] dependenciesFiles = depsDirectory.listFiles();
       if (dependenciesFiles != null) {
         for (File dependencyFile : dependenciesFiles) {
-          // this check, however, would resolve any two dependencies with same artifact name the same
+          // this check, however, would resolve any two dependencies with same artifact name the
+          // same
           // TODO: make this implementation more exact
-          if (FilenameUtils.removeExtension(dependencyFile.getName()).equals(dependency.getArtifactId())) {
+          if (FilenameUtils.removeExtension(dependencyFile.getName())
+              .equals(dependency.getArtifactId())) {
             return true;
           }
         }

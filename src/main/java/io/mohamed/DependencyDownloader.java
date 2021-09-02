@@ -41,6 +41,7 @@ import java.util.List;
 
 public class DependencyDownloader {
 
+  private static boolean filterAppInventorDependencies;
   List<File> downloadedFiles = new ArrayList<>();
   ArrayList<Dependency> dependenciesToLoad = new ArrayList<>();
   List<DownloaderThread> downloaderThreads = new ArrayList<>();
@@ -69,8 +70,11 @@ public class DependencyDownloader {
   }
 
   public void resolveDependenciesFiles(
-      List<Dependency> dependencies, FilesDownloadedCallback callback) {
+      List<Dependency> dependencies,
+      FilesDownloadedCallback callback,
+      boolean filterAppInventorDependencies) {
     this.callback = callback;
+    DependencyDownloader.filterAppInventorDependencies = filterAppInventorDependencies;
     if (done) {
       return;
     }
@@ -142,10 +146,21 @@ public class DependencyDownloader {
         File artifactDirectory =
             new File(cachesDir, fileDownloadPath.substring(0, fileDownloadPath.lastIndexOf('/')));
         if (!artifactDirectory.exists()) {
-          artifactDirectory.mkdirs();
+          if (!artifactDirectory.mkdirs()) {
+            System.out.println("[WARNING] Failed to create some artifact directories");
+          }
         }
         String fileName = fileDownloadPath.split("/")[fileDownloadPath.split("/").length - 1];
         File outputFile = new File(artifactDirectory, fileName);
+        if (filterAppInventorDependencies) {
+          AppInvDependenciesCloner cloner = new AppInvDependenciesCloner();
+          if (cloner.dependencyExists(dependency)) {
+            // this file was already included in app inventor libraries, we can skip this
+            callback.done(null, dependency);
+            interrupt();
+            return;
+          }
+        }
         if (outputFile.exists()) {
           // this file was already downloaded in cache, we can directly report success
           callback.done(outputFile, dependency);

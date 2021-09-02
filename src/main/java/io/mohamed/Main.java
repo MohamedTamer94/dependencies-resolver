@@ -80,7 +80,7 @@ public class Main {
     Option filterAppInventorDependencies =
         Option.builder()
             .longOpt("filter-appinventor-dependencies")
-            .desc("Don't include dependencies which appinventor includes by default.")
+            .desc("Don't include dependencies which app inventor includes by default.")
             .build();
     Options options = new Options();
     options.addOption(groupId);
@@ -160,7 +160,8 @@ public class Main {
                         }
                         System.out.println("Success!");
                         System.exit(0);
-                      });
+                      },
+                      commandLine.hasOption("filter-appinventor-dependencies"));
             });
   }
 }
