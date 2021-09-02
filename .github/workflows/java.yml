@@ -23,7 +23,7 @@ jobs:
       - name: Build with Gradle
         run: |
          chmod +x gradlew
-        ./gradlew fatJar
+         ./gradlew fatJar
       - name: Commit Updated JAR
         uses: actions/checkout@v2
         with:
