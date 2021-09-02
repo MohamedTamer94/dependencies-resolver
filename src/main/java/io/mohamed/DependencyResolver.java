@@ -386,7 +386,6 @@ public class DependencyResolver {
     } else {
       dependency.setRepository(mavenRepo);
       if (!loadedDependencies.containsValue(dependency)) {
-        System.out.println("Adding dependency " + dependency);
         loadedDependencies.put(dependency, dependency);
       }
       // the artifact's POM was parsed successfully
@@ -473,7 +472,9 @@ public class DependencyResolver {
         File artifactDirectory =
             new File(cachesDir, pomDownloadUrl.substring(0, pomDownloadUrl.lastIndexOf('/')));
         if (!artifactDirectory.exists()) {
-          artifactDirectory.mkdirs();
+          if (!artifactDirectory.mkdirs()) {
+            System.out.println("[WARNING] Failed to create some artifact directories");
+          }
         }
         String fileName = pomDownloadUrl.split("/")[pomDownloadUrl.split("/").length - 1];
         File outputFile = new File(artifactDirectory, fileName);
