@@ -110,7 +110,7 @@ public class DependencyDownloader {
     if (done) {
       return;
     }
-    if (currentDependency > (dependenciesToLoad.size() - 1)) { // only the current thread is running
+    if (currentDependency >= (dependenciesToLoad.size() - 1)) { // only the current thread is running
       done = true;
       if (callback != null) {
         callback.done(downloadedFiles);
