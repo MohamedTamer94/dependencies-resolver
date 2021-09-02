@@ -36,6 +36,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.eclipse.jgit.api.errors.GitAPIException;
 
 /**
  * A CLI to resolve dependencies for the given maven artifact
@@ -76,6 +77,11 @@ public class Main {
             .required()
             .hasArg()
             .build();
+    Option filterAppInventorDependencies =
+        Option.builder()
+            .longOpt("filter-appinventor-dependencies")
+            .desc("Don't include dependencies which appinventor includes by default.")
+            .build();
     Options options = new Options();
     options.addOption(groupId);
     options.addOption(artifactId);
@@ -83,9 +89,20 @@ public class Main {
     options.addOption(aircraftType);
     options.addOption(verbose);
     options.addOption(output);
+    options.addOption(filterAppInventorDependencies);
     CommandLineParser parser = new DefaultParser();
     CommandLine commandLine = parser.parse(options, args);
     System.out.println("Fetching Dependencies..");
+    AppInvDependenciesCloner appInvDependenciesCloner = new AppInvDependenciesCloner();
+    if (appInvDependenciesCloner.isDependenciesDownloaded()) {
+      System.out.println("AppInventor dependencies was already downloaded.");
+    } else {
+      try {
+        appInvDependenciesCloner.download();
+      } catch (GitAPIException e) {
+        e.printStackTrace();
+      }
+    }
     // resolves and locates the dependencies by parsing their POM files
     new DependencyResolver()
         .resolveDependencies(
