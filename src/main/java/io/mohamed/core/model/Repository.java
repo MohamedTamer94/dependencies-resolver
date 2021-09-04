@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package io.mohamed.model;
+package io.mohamed.core.model;
 
 import java.util.ArrayList;
 import java.util.Arrays;

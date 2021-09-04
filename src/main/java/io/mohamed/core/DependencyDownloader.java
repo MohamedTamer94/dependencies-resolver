@@ -23,12 +23,12 @@
  * SOFTWARE.
  */
 
-package io.mohamed;
+package io.mohamed.core;
 
-import io.mohamed.callback.DownloadCallback;
-import io.mohamed.callback.FilesDownloadedCallback;
-import io.mohamed.model.Dependency;
-import io.mohamed.model.Repository;
+import io.mohamed.core.callback.DownloadCallback;
+import io.mohamed.core.callback.FilesDownloadedCallback;
+import io.mohamed.core.model.Dependency;
+import io.mohamed.core.model.Repository;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -44,8 +44,8 @@ public class DependencyDownloader {
   private static boolean filterAppInventorDependencies;
   List<File> downloadedFiles = new ArrayList<>();
   ArrayList<Dependency> dependenciesToLoad = new ArrayList<>();
+  ArrayList<Dependency> remainingDependencies = new ArrayList<>();
   List<DownloaderThread> downloaderThreads = new ArrayList<>();
-  int currentDependency = 0;
   private boolean done = false;
   private FilesDownloadedCallback callback;
 
@@ -83,6 +83,7 @@ public class DependencyDownloader {
         dependenciesToLoad.add(dependency);
       }
     }
+    remainingDependencies = dependenciesToLoad;
     doResolve(dependenciesToLoad.get(0));
   }
 
@@ -92,14 +93,13 @@ public class DependencyDownloader {
             dependency,
             dependency.getRepository(),
             ((downloadedFile, dependency1) -> {
-              dependenciesToLoad.remove(dependency1);
+              remainingDependencies.remove(dependency1);
               if (downloadedFile != null) { // the file wasn't found
                 downloadedFiles.add(downloadedFile);
               }
               finishDownload(callback);
-              if (currentDependency < (dependenciesToLoad.size() - 1)) {
-                currentDependency++;
-                doResolve(dependenciesToLoad.get(currentDependency));
+              if (!remainingDependencies.isEmpty()) {
+                doResolve(remainingDependencies.get(0));
               }
             }));
     thread.start();
@@ -110,7 +110,7 @@ public class DependencyDownloader {
     if (done) {
       return;
     }
-    if (currentDependency >= (dependenciesToLoad.size() - 1)) { // only the current thread is running
+    if (dependenciesToLoad.isEmpty()) { // all dependencies has been downloaded
       done = true;
       if (callback != null) {
         callback.done(downloadedFiles);
@@ -153,7 +153,7 @@ public class DependencyDownloader {
         String fileName = fileDownloadPath.split("/")[fileDownloadPath.split("/").length - 1];
         File outputFile = new File(artifactDirectory, fileName);
         if (filterAppInventorDependencies) {
-          AppInvDependenciesCloner cloner = new AppInvDependenciesCloner();
+          AppInvDependencyManager cloner = new AppInvDependencyManager();
           if (cloner.dependencyExists(dependency)) {
             // this file was already included in app inventor libraries, we can skip this
             callback.done(null, dependency);

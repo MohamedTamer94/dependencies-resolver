@@ -1,4 +1,4 @@
-package io.mohamed;
+package io.mohamed.core;
 
 import java.io.File;
 

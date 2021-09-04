@@ -1,4 +1,3 @@
-// -*- mode: java; c-basic-offset: 2; -*-
 /*
  * MIT License
  *
@@ -23,43 +22,35 @@
  * SOFTWARE.
  */
 
-package io.mohamed.model;
+// -*- mode: java; c-basic-offset: 2; -*-
+package io.mohamed.core.callback;
+
+import io.mohamed.core.model.Dependency;
+import io.mohamed.core.model.Repository;
+import java.io.IOException;
+import java.util.List;
 
 /**
- * A class representing a maven project's property. A property is typically is represented in POM
- * XML files as: <properties> <my.property>property value</my.property> </properties>
+ * An interface which is used to get a callback when resolving is complete
  *
  * @author Mohamed Tamer
  */
-public class ProjectProperty {
-
-  // the property name
-  private final String value;
-  // the property value
-  private final String name;
-
+public interface ResolveCallback {
   /**
-   * Creates a new project property
+   * Called when resolving dependencies has completed
    *
-   * @param name the property name
-   * @param value the property value
+   * @param artifactFound weather the artifact has been found in any maven repository
+   * @param pomUrl the pom URL path
+   * @param mavenRepo the maven repository
+   * @param dependencyList the list of dependencies for the artifact
+   * @param dependency the dependency to resolve dependencies for
+   * @throws IOException if any resolver thread throws an IOException
    */
-  public ProjectProperty(String name, String value) {
-    this.name = name;
-    this.value = value;
-  }
-
-  /**
-   * @return the property's value
-   */
-  public String getValue() {
-    return value;
-  }
-
-  /**
-   * @return the property's value
-   */
-  public String getName() {
-    return name;
-  }
+  void done(
+      boolean artifactFound,
+      String pomUrl,
+      Repository mavenRepo,
+      List<Dependency> dependencyList,
+      Dependency dependency)
+      throws IOException;
 }

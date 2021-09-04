@@ -23,9 +23,11 @@
  * SOFTWARE.
  */
 
-package io.mohamed;
+package io.mohamed.cli;
 
-import io.mohamed.model.Dependency;
+import io.mohamed.core.DependencyDownloader;
+import io.mohamed.core.DependencyResolver;
+import io.mohamed.core.model.Dependency;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -36,7 +38,6 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.eclipse.jgit.api.errors.GitAPIException;
 
 /**
  * A CLI to resolve dependencies for the given maven artifact
@@ -93,16 +94,6 @@ public class Main {
     CommandLineParser parser = new DefaultParser();
     CommandLine commandLine = parser.parse(options, args);
     System.out.println("Fetching Dependencies..");
-    AppInvDependenciesCloner appInvDependenciesCloner = new AppInvDependenciesCloner();
-    if (appInvDependenciesCloner.isDependenciesDownloaded()) {
-      System.out.println("AppInventor dependencies was already downloaded.");
-    } else {
-      try {
-        appInvDependenciesCloner.download();
-      } catch (GitAPIException e) {
-        e.printStackTrace();
-      }
-    }
     // resolves and locates the dependencies by parsing their POM files
     new DependencyResolver()
         .resolveDependencies(
@@ -128,7 +119,7 @@ public class Main {
                         System.out.println(
                             "Successfully downloaded " + fileList.size() + " files.");
                         File dependenciesDir = new File(commandLine.getOptionValue("output"));
-                        if (!dependenciesDir.exists()) {
+                        if (!dependenciesDir.exists() && dependenciesDir.isDirectory()) {
                           if (!dependenciesDir.mkdir()) {
                             System.err.println("Failed to create dependencies directory.");
                             return;

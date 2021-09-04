@@ -23,14 +23,12 @@
  * SOFTWARE.
  */
 
-package io.mohamed;
+package io.mohamed.core;
 
-import static io.mohamed.model.Repository.COMMON_MAVEN_REPOSITORIES;
-
-import io.mohamed.callback.ResolveCallback;
-import io.mohamed.model.Dependency;
-import io.mohamed.model.ProjectProperty;
-import io.mohamed.model.Repository;
+import io.mohamed.core.callback.ResolveCallback;
+import io.mohamed.core.model.Dependency;
+import io.mohamed.core.model.ProjectProperty;
+import io.mohamed.core.model.Repository;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -338,11 +336,11 @@ public class DependencyResolver {
     }
     ResolverThread thread =
         new ResolverThread(
-            COMMON_MAVEN_REPOSITORIES.get(repoIndex),
+            Repository.COMMON_MAVEN_REPOSITORIES.get(repoIndex),
             dependency,
             (artifactFound, pomUrl, mavenRepo, dependencies, dependency1) -> {
               if (!artifactFound) {
-                if (repoIndex > (COMMON_MAVEN_REPOSITORIES.size() - 1)) {
+                if (repoIndex > (Repository.COMMON_MAVEN_REPOSITORIES.size() - 1)) {
                   this.artifactFound = false;
                   this.pomDownloadUrl = pomUrl;
                   this.dependencies = dependencies;
@@ -378,7 +376,7 @@ public class DependencyResolver {
     if (!artifactFound) {
       System.err.println("Didn't find artifact " + dependency + " in any repository!");
       System.err.println("Searched in:");
-      for (Repository repo : COMMON_MAVEN_REPOSITORIES) {
+      for (Repository repo : Repository.COMMON_MAVEN_REPOSITORIES) {
         System.err.println(repo + pomDownloadUrl);
       }
       System.exit(0); // don't resolve any further dependencies

@@ -22,35 +22,23 @@
  * SOFTWARE.
  */
 
-// -*- mode: java; c-basic-offset: 2; -*-
-package io.mohamed.callback;
+package io.mohamed.core.callback;
 
-import io.mohamed.model.Dependency;
-import io.mohamed.model.Repository;
-import java.io.IOException;
+import java.io.File;
 import java.util.List;
 
 /**
- * An interface which is used to get a callback when resolving is complete
+ * An interface which is used to get a callback when resolving downloading files for dependencies
+ * has completed
  *
  * @author Mohamed Tamer
  */
-public interface ResolveCallback {
+public interface FilesDownloadedCallback {
+
   /**
-   * Called when resolving dependencies has completed
+   * Called when downloading files for the given dependencies has completed
    *
-   * @param artifactFound weather the artifact has been found in any maven repository
-   * @param pomUrl the pom URL path
-   * @param mavenRepo the maven repository
-   * @param dependencyList the list of dependencies for the artifact
-   * @param dependency the dependency to resolve dependencies for
-   * @throws IOException if any resolver thread throws an IOException
+   * @param fileList the list of the downloaded files
    */
-  void done(
-      boolean artifactFound,
-      String pomUrl,
-      Repository mavenRepo,
-      List<Dependency> dependencyList,
-      Dependency dependency)
-      throws IOException;
+  void done(List<File> fileList);
 }

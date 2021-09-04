@@ -23,18 +23,12 @@
  * SOFTWARE.
  */
 
-package io.mohamed.model;
+package io.mohamed.core.model;
 
 /**
- * A class to represent a maven dependency
- * a maven dependency is represented in POM XML files as:
- * <dependency>
- *   <groupId>com.example</groupId>
- *   <artifactId>test-project</artifactId>
- *   <version>1.0</version>
- *   <scope>runtime</scope>
- *   <type>aar</type>
- * </dependency>
+ * A class to represent a maven dependency a maven dependency is represented in POM XML files as:
+ * <dependency> <groupId>com.example</groupId> <artifactId>test-project</artifactId>
+ * <version>1.0</version> <scope>runtime</scope> <type>aar</type> </dependency>
  *
  * @author Mohamed Tamer
  */
@@ -58,15 +52,33 @@ public class Dependency {
    * @param groupId the dependency's group ID
    * @param artifactId the dependency's artifact ID
    * @param version the dependency's version
+   */
+  public Dependency(String groupId, String artifactId, String version) {
+    this(groupId, artifactId, version, null, null);
+  }
+
+  /**
+   * Creates a new Dependency object
+   *
+   * @param groupId the dependency's group ID
+   * @param artifactId the dependency's artifact ID
+   * @param version the dependency's version
+   * @param type the dependency's type, or null for the default type
+   */
+  public Dependency(String groupId, String artifactId, String version, String type) {
+    this(groupId, artifactId, version, type, null);
+  }
+
+  /**
+   * Creates a new Dependency object
+   *
+   * @param groupId the dependency's group ID
+   * @param artifactId the dependency's artifact ID
+   * @param version the dependency's version
    * @param type the dependency's type, or null for the default type
    * @param scope the dependency's scope, or null for the default scope
    */
-  public Dependency(
-      String groupId,
-      String artifactId,
-      String version,
-      String type,
-      String scope) {
+  public Dependency(String groupId, String artifactId, String version, String type, String scope) {
     this.groupId = groupId;
     this.artifactId = artifactId;
     this.version = version;
@@ -142,5 +154,19 @@ public class Dependency {
   /** Specifies the dependency url */
   public void setRepository(Repository repo) {
     this.repository = repo;
+  }
+
+  public static Dependency valueOf(String str) {
+    if (str.startsWith("implementation ")) {
+      String dependencyValue = str.substring("implementation ".length()).replaceAll("'", "").trim();
+      String[] dependenceyPieces = dependencyValue.split(":");
+      if (dependenceyPieces.length >= 2) {
+        String artifactId = dependenceyPieces[0];
+        String groupId = dependenceyPieces[1];
+        String version = dependenceyPieces[2];
+        return new Dependency(artifactId, groupId, version);
+      }
+    }
+    return null;
   }
 }

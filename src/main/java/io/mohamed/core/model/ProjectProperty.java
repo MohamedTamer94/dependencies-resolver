@@ -1,3 +1,4 @@
+// -*- mode: java; c-basic-offset: 2; -*-
 /*
  * MIT License
  *
@@ -22,22 +23,39 @@
  * SOFTWARE.
  */
 
-package io.mohamed.callback;
-
-import io.mohamed.model.Dependency;
-import java.io.File;
+package io.mohamed.core.model;
 
 /**
- * An interface which is used to listen when a file download has completed
+ * A class representing a maven project's property. A property is typically is represented in POM
+ * XML files as: <properties> <my.property>property value</my.property> </properties>
  *
  * @author Mohamed Tamer
  */
-public interface DownloadCallback {
+public class ProjectProperty {
+
+  // the property name
+  private final String value;
+  // the property value
+  private final String name;
+
   /**
-   * Called when a file download completes
+   * Creates a new project property
    *
-   * @param downloadedFile the downloaded file, null if no file was found for the dependency
-   * @param dependency the dependency which the file was downloaded for
+   * @param name the property name
+   * @param value the property value
    */
-  void done(File downloadedFile, Dependency dependency);
+  public ProjectProperty(String name, String value) {
+    this.name = name;
+    this.value = value;
+  }
+
+  /** @return the property's value */
+  public String getValue() {
+    return value;
+  }
+
+  /** @return the property's value */
+  public String getName() {
+    return name;
+  }
 }
