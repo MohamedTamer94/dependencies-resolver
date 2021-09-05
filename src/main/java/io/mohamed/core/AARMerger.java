@@ -44,9 +44,21 @@ import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
+/**
+ * Merges multiple AAR files into one AAR file
+ *
+ * @author Mohamed Tamer
+ */
 public class AARMerger {
+  // weather to print debug messages
   private boolean verbose;
 
+  /**
+   * Saves the manifest XmlDocument to a file
+   *
+   * @param xmlDocument the manifest xml document
+   * @param out the output manifest file
+   */
   private static void save(XmlDocument xmlDocument, File out) {
     try {
       Files.write(
@@ -58,6 +70,17 @@ public class AARMerger {
     }
   }
 
+  /**
+   * Merges the given aar files into one
+   *
+   * @param verbose weather to print debug messages or not
+   * @param downloadedFiles the aar files to merge
+   * @param mainDependency the main dependency, used for writing the AAR name
+   * @return the output AAR file
+   * @throws IOException when writing aar file fails
+   * @throws MergeFailureException when an error occurs when merging android manifests
+   * @throws MergingException when resources merging fails
+   */
   public File merge(boolean verbose, List<File> downloadedFiles, Dependency mainDependency)
       throws IOException, MergeFailureException, MergingException {
     this.verbose = verbose;
@@ -203,6 +226,14 @@ public class AARMerger {
     return aar;
   }
 
+  /**
+   * Adds a file to zip file, given its path in the zip
+   *
+   * @param file the file to add
+   * @param filePath the path for the file to take in the zip
+   * @param out the zip stream
+   * @throws IOException when writing file to aar fails
+   */
   private void addFile(File file, String filePath, ZipOutputStream out) throws IOException {
     ZipEntry e = new ZipEntry(filePath);
     out.putNextEntry(e);
@@ -212,6 +243,13 @@ public class AARMerger {
     out.closeEntry();
   }
 
+  /**
+   * Adds a directory and all of its sub-files, and subdirectories to zip file
+   *
+   * @param directory the directory file
+   * @param out the zip stream
+   * @throws IOException when writing file to aar fails
+   */
   private void addDirectory(File directory, ZipOutputStream out) throws IOException {
     Files.walkFileTree(
         directory.toPath(),
@@ -227,6 +265,15 @@ public class AARMerger {
         });
   }
 
+  /**
+   * Extract a folder from a zip file
+   *
+   * @param file the zip file
+   * @param outputDir the output directory
+   * @param folder the folder name
+   * @return weather extracting folder succeeds
+   * @throws IOException when extracting folder fails
+   */
   private boolean extractFolder(File file, File outputDir, String folder) throws IOException {
     List<File> filesCopied = new ArrayList<>();
     try (java.util.zip.ZipFile zipFile = new ZipFile(file)) {
@@ -260,6 +307,15 @@ public class AARMerger {
     return !filesCopied.isEmpty();
   }
 
+  /**
+   * Extracts a file from zip file
+   *
+   * @param zipFile the zip file path
+   * @param fileName the file name
+   * @param outputFile the output file path
+   * @throws ProviderNotFoundException if extracting file fails or the file doesn't exist
+   * @throws IOException if extracting file fails or the file doesn't exist
+   */
   public void extractFile(Path zipFile, String fileName, Path outputFile)
       throws ProviderNotFoundException, IOException {
     // Wrap the file system in a try-with-resources statement
