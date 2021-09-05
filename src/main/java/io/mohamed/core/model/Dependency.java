@@ -90,6 +90,21 @@ public class Dependency {
     }
   }
 
+  public static Dependency valueOf(String str) {
+    if (str.startsWith("implementation ")) {
+      String dependencyValue = str.substring("implementation ".length()).replaceAll("'", "").trim();
+      String[] dependenceyPieces = dependencyValue.split(":");
+      if (dependenceyPieces.length >= 2) {
+        String artifactId = dependenceyPieces[0];
+        String groupId = dependenceyPieces[1];
+        String version = dependenceyPieces[2];
+        return new Dependency(artifactId, groupId, version);
+      }
+    }
+    throw new IllegalArgumentException(
+        "Failed to convert dependnecy string " + str + " to " + Dependency.class.getName());
+  }
+
   /** @return the dependency artifact id */
   public String getArtifactId() {
     return artifactId;
@@ -154,19 +169,5 @@ public class Dependency {
   /** Specifies the dependency url */
   public void setRepository(Repository repo) {
     this.repository = repo;
-  }
-
-  public static Dependency valueOf(String str) {
-    if (str.startsWith("implementation ")) {
-      String dependencyValue = str.substring("implementation ".length()).replaceAll("'", "").trim();
-      String[] dependenceyPieces = dependencyValue.split(":");
-      if (dependenceyPieces.length >= 2) {
-        String artifactId = dependenceyPieces[0];
-        String groupId = dependenceyPieces[1];
-        String version = dependenceyPieces[2];
-        return new Dependency(artifactId, groupId, version);
-      }
-    }
-    return null;
   }
 }

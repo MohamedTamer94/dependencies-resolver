@@ -27,6 +27,8 @@ package io.mohamed.cli;
 
 import io.mohamed.core.DependencyDownloader;
 import io.mohamed.core.DependencyResolver;
+import io.mohamed.core.callback.FilesDownloadedCallback;
+import io.mohamed.core.callback.ResolveCallback;
 import io.mohamed.core.model.Dependency;
 import java.io.File;
 import java.io.IOException;
@@ -46,28 +48,13 @@ import org.apache.commons.cli.ParseException;
  */
 public class Main {
 
-  public static void main(String[] args) throws IOException, ParseException {
+  public static void main(String[] args) throws ParseException {
     Option groupId =
-        Option.builder()
-            .required()
-            .longOpt("groupId")
-            .desc("The aircraft group ID.")
-            .hasArg()
-            .build();
+        Option.builder().longOpt("groupId").desc("The aircraft group ID.").hasArg().build();
     Option artifactId =
-        Option.builder()
-            .required()
-            .longOpt("artifactId")
-            .desc("The artifactId ID.")
-            .hasArg()
-            .build();
+        Option.builder().longOpt("artifactId").desc("The artifactId ID.").hasArg().build();
     Option aircraftVersion =
-        Option.builder()
-            .required()
-            .longOpt("version")
-            .desc("The aircraft version.")
-            .hasArg()
-            .build();
+        Option.builder().longOpt("version").desc("The aircraft version.").hasArg().build();
     Option aircraftType =
         Option.builder().longOpt("type").desc("The dependency version.").hasArg().build();
     Option verbose = Option.builder("v").longOpt("verbose").desc("Show debug messages.").build();
@@ -83,6 +70,17 @@ public class Main {
             .longOpt("filter-appinventor-dependencies")
             .desc("Don't include dependencies which app inventor includes by default.")
             .build();
+    Option compress =
+        Option.builder("c")
+            .longOpt("compress")
+            .desc("Compresses all jar classes into one JAR file ( or AAR, if any AAR file exists")
+            .build();
+    Option gradleDependency =
+        Option.builder("d")
+            .longOpt("dependency")
+            .hasArg()
+            .desc("The dependency in gradle style : implementation 'com.test:test:1.0'")
+            .build();
     Options options = new Options();
     options.addOption(groupId);
     options.addOption(artifactId);
@@ -90,69 +88,85 @@ public class Main {
     options.addOption(aircraftType);
     options.addOption(verbose);
     options.addOption(output);
+    options.addOption(compress);
     options.addOption(filterAppInventorDependencies);
+    options.addOption(gradleDependency);
     CommandLineParser parser = new DefaultParser();
     CommandLine commandLine = parser.parse(options, args);
     System.out.println("Fetching Dependencies..");
     // resolves and locates the dependencies by parsing their POM files
-    new DependencyResolver()
-        .resolveDependencies(
-            new Dependency(
-                commandLine.getOptionValue("groupId"),
-                commandLine.getOptionValue("artifactId"),
-                commandLine.getOptionValue("version"),
-                commandLine.getOptionValue("type"),
-                null),
-            (artifactFound, pomUrl, mavenRepo, dependencyList, dependency) -> {
-              if (dependencyList.isEmpty()) {
-                System.err.println("Didn't find any dependencies!");
-              } else {
-                System.out.println(
-                    "Successfully Resolved " + dependencyList.size() + " dependencies!");
-              }
-              System.out.println("Downloading Dependencies..");
-              // downloads the JAR/AAR files for the resolved dependencies
-              new DependencyDownloader()
-                  .resolveDependenciesFiles(
-                      dependencyList,
-                      fileList -> {
-                        System.out.println(
-                            "Successfully downloaded " + fileList.size() + " files.");
-                        File dependenciesDir = new File(commandLine.getOptionValue("output"));
-                        if (!dependenciesDir.exists() && dependenciesDir.isDirectory()) {
-                          if (!dependenciesDir.mkdir()) {
-                            System.err.println("Failed to create dependencies directory.");
-                            return;
-                          }
-                        }
-                        // copy all downloaded files to the output directory
-                        System.out.println("Copying libraries to output directory..");
-                        for (File file : fileList) {
-                          if (file == null) {
-                            continue;
-                          }
-                          if (commandLine.hasOption("verbose")) {
-                            System.out.println(
-                                "Copying library: "
-                                    + file.getAbsolutePath()
-                                    + " to output directory "
-                                    + dependenciesDir.getAbsolutePath());
-                          }
-                          File destFile =
-                              new File(dependenciesDir.getAbsolutePath(), file.getName());
-                          try {
-                            Files.copy(
-                                file.toPath(),
-                                destFile.toPath(),
-                                StandardCopyOption.REPLACE_EXISTING);
-                          } catch (IOException e) {
-                            e.printStackTrace();
-                          }
-                        }
-                        System.out.println("Success!");
-                        System.exit(0);
-                      },
-                      commandLine.hasOption("filter-appinventor-dependencies"));
-            });
+    Dependency mainDependency;
+    if (commandLine.hasOption("dependency")) {
+      mainDependency = Dependency.valueOf(commandLine.getOptionValue("dependency"));
+    } else if (commandLine.hasOption("groupId")
+        && commandLine.hasOption("artifactId")
+        && commandLine.hasOption("version")) {
+      mainDependency =
+          new Dependency(
+              commandLine.getOptionValue("groupId"),
+              commandLine.getOptionValue("artifactId"),
+              commandLine.getOptionValue("version"),
+              commandLine.getOptionValue("type"));
+    } else {
+      throw new IllegalArgumentException(
+          "Neither a dependency argument nor a groupId, artifactId, version arguments were provided.");
+    }
+    ResolveCallback resolveCallback =
+        (artifactFound, pomUrl, mavenRepo, dependencyList, dependency) -> {
+          if (dependencyList.isEmpty()) {
+            System.err.println("Didn't find any dependencies!");
+          } else {
+            System.out.println("Successfully Resolved " + dependencyList.size() + " dependencies!");
+          }
+          System.out.println("Downloading Dependencies..");
+          // downloads the JAR/AAR files for the resolved dependencies
+          FilesDownloadedCallback callback =
+              fileList -> {
+                System.out.println("Successfully downloaded " + fileList.size() + " files.");
+                File dependenciesDir = new File(commandLine.getOptionValue("output"));
+                if (!dependenciesDir.exists()) {
+                  if (!dependenciesDir.mkdir()) {
+                    System.err.println("Failed to create dependencies directory.");
+                    return;
+                  }
+                }
+                // copy all downloaded files to the output directory
+                System.out.println("Copying libraries to output directory..");
+                for (File file : fileList) {
+                  if (file == null) {
+                    continue;
+                  }
+                  if (commandLine.hasOption("verbose")) {
+                    System.out.println(
+                        "Copying library: "
+                            + file.getAbsolutePath()
+                            + " to output directory "
+                            + dependenciesDir.getAbsolutePath());
+                  }
+                  File destFile = new File(dependenciesDir.getAbsolutePath(), file.getName());
+                  try {
+                    Files.copy(
+                        file.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                  } catch (IOException e) {
+                    e.printStackTrace();
+                  }
+                }
+                System.out.println("Success!");
+                System.exit(0);
+              };
+          new DependencyDownloader.Builder()
+              .setMainDependency(mainDependency)
+              .setCallback(callback)
+              .setDependencies(dependencyList)
+              .setCompress(commandLine.hasOption("compress"))
+              .setFilterAppInventorDependencies(
+                  commandLine.hasOption("filter-appinventor-dependencies"))
+              .setVerbose(commandLine.hasOption("verbose"))
+              .resolve();
+        };
+    new DependencyResolver.Builder()
+        .setDependency(mainDependency)
+        .setCallback(resolveCallback)
+        .resolve();
   }
 }

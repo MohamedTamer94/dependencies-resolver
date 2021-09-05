@@ -83,6 +83,13 @@ public class DependencyResolver {
   // a flag to indicate that we have finished resolving dependencies
   private boolean done = false;
 
+  /**
+   * Creates a new DependencyResolver
+   *
+   * @see DependencyResolver.Builder
+   */
+  private DependencyResolver() {}
+
   public static boolean isNumeric(String str) {
     try {
       Double.parseDouble(str);
@@ -301,10 +308,8 @@ public class DependencyResolver {
    *
    * @param dependency the dependency to resolve dependencies for
    * @param callback the callback to call when the resolving is complete
-   * @throws IOException if any resolver throws an IOException
    */
-  public void resolveDependencies(Dependency dependency, ResolveCallback callback)
-      throws IOException {
+  private void resolveDependencies(Dependency dependency, ResolveCallback callback) {
     this.callback = callback;
     this.artifactFound = false;
     repoIndex = 0;
@@ -397,12 +402,8 @@ public class DependencyResolver {
       }
       // load all dependencies for the loaded dependency
       for (Dependency dependency1 : dependencies) {
-        try {
-          dependenciesToLoad.add(dependency1);
-          resolveDependencies(dependency1, callback);
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
+        dependenciesToLoad.add(dependency1);
+        resolveDependencies(dependency1, callback);
       }
     }
     // keep track of running threads by removing all dead threads
@@ -410,7 +411,6 @@ public class DependencyResolver {
       resolverThreads.removeIf(thread -> thread == null || !thread.isAlive());
     } catch (ConcurrentModificationException ignored) {
     }
-    System.out.println(resolverThreads.size());
     if (resolverThreads.size() <= 1) { // only the current thread is running
       done = true; // disallow any further methods to be executed
       if (callback != null) {
@@ -421,6 +421,27 @@ public class DependencyResolver {
             Arrays.asList(loadedDependencies.values().toArray(new Dependency[0])),
             dependency);
       }
+    }
+  }
+
+  public static class Builder {
+    // the dependency to resolve
+    private Dependency dependency;
+    // the callback to call when resolving is done
+    private ResolveCallback callback;
+
+    public Builder setCallback(ResolveCallback callback) {
+      this.callback = callback;
+      return this;
+    }
+
+    public Builder setDependency(Dependency dependency) {
+      this.dependency = dependency;
+      return this;
+    }
+
+    public void resolve() {
+      new DependencyResolver().resolveDependencies(dependency, callback);
     }
   }
 

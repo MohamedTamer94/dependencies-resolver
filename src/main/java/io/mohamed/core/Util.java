@@ -1,6 +1,7 @@
 package io.mohamed.core;
 
 import java.io.File;
+import org.apache.commons.io.FilenameUtils;
 
 public class Util {
 
@@ -23,5 +24,9 @@ public class Util {
       }
     }
     return localFilesDir;
+  }
+
+  public static boolean isAar(File file) {
+    return FilenameUtils.getExtension(file.getName()).equals("aar");
   }
 }
