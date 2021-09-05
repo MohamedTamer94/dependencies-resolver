@@ -40,7 +40,7 @@ test {
     useJUnitPlatform()
 }
 
-def mainClassName = "io.mohamed.Main"
+def mainClassName = "io.mohamed.cli.Main"
 
 jar {
     manifest {
