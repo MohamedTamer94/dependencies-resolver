@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -53,7 +55,7 @@ public class Util {
         return "This Build doesn't have a version name provided.";
       }
       Properties properties = new Properties();
-      properties.load(inputStream);
+      properties.load(new StringReader(IOUtils.toString(inputStream, StandardCharsets.UTF_8)));
       String version = properties.getProperty("version");
       return "Dependencies Resolver - v" + version;
     } catch (IOException e) {
