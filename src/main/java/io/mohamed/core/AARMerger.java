@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -152,12 +151,7 @@ public class AARMerger {
     if (!aaptToolFile.setExecutable(true)) {
       System.out.println("[WARNING] Failed to set AAPT tool executable.");
     }
-    URL aaptToolResource = DependencyDownloader.class.getResource(aaptTool);
-    if (aaptToolResource != null) {
-      try (FileOutputStream fos = new FileOutputStream(aaptToolFile)) {
-        IOUtils.copy(aaptToolResource, fos);
-      }
-    }
+    Util.copyResource(aaptTool, aaptToolFile);
     File outputDir = new File(Util.getLocalFilesDir(), "res");
     if (!outputDir.exists()) {
       if (!outputDir.mkdir()) {

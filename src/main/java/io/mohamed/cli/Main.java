@@ -27,6 +27,7 @@ package io.mohamed.cli;
 
 import io.mohamed.core.DependencyDownloader;
 import io.mohamed.core.DependencyResolver;
+import io.mohamed.core.Util;
 import io.mohamed.core.callback.FilesDownloadedCallback;
 import io.mohamed.core.callback.ResolveCallback;
 import io.mohamed.core.model.Dependency;
@@ -34,6 +35,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -59,14 +65,9 @@ public class Main {
         Option.builder().longOpt("version").desc("The aircraft version.").hasArg().build();
     Option aircraftType =
         Option.builder().longOpt("type").desc("The dependency version.").hasArg().build();
-    Option verbose = Option.builder("v").longOpt("verbose").desc("Show debug messages.").build();
+    Option verbose = Option.builder().longOpt("verbose").desc("Show debug messages.").build();
     Option output =
-        Option.builder("o")
-            .longOpt("output")
-            .desc("The output directory.")
-            .required()
-            .hasArg()
-            .build();
+        Option.builder("o").longOpt("output").desc("The output directory.").hasArg().build();
     Option filterAppInventorDependencies =
         Option.builder()
             .longOpt("filter-appinventor-dependencies")
@@ -83,6 +84,17 @@ public class Main {
             .hasArg()
             .desc("The dependency in gradle style : implementation 'com.test:test:1.0'")
             .build();
+    Option versionOption =
+        Option.builder("v").desc("Prints the dependencies-resolver version").build();
+    Option repository =
+        Option.builder("r")
+            .desc(
+                "Specifies custom repositories for the resolve task. Multiple repositories can be added by separating them with a space.")
+            .hasArg()
+            .numberOfArgs(Option.UNLIMITED_VALUES)
+            .longOpt("repository")
+            .build();
+    Option help = Option.builder("h").longOpt("help").desc("Prints the help message").build();
     Options options = new Options();
     options.addOption(groupId);
     options.addOption(artifactId);
@@ -93,6 +105,9 @@ public class Main {
     options.addOption(compress);
     options.addOption(filterAppInventorDependencies);
     options.addOption(gradleDependency);
+    options.addOption(help);
+    options.addOption(versionOption);
+    options.addOption(repository);
     CommandLineParser parser = new DefaultParser();
     final CommandLine commandLine;
     try {
@@ -102,6 +117,21 @@ public class Main {
       new HelpFormatter().printHelp("java -jar dependencies-resolve-version-all.jar", options);
       return;
     }
+    if (commandLine.hasOption("help")) {
+      System.out.println(
+          "A java CLI to resolve all the dependencies declared for the a specific maven artifact.");
+      new HelpFormatter().printHelp("java -jar dependencies-resolve-version-all.jar", options);
+      return;
+    }
+    if (commandLine.hasOption("v")) {
+      System.out.println(Util.getVersion());
+      return;
+    }
+    List<String> repositories =
+        Optional.ofNullable(commandLine.getOptionValues("repository"))
+            .map(Arrays::stream)
+            .orElseGet(Stream::empty)
+            .collect(Collectors.toList());
     System.out.println("Fetching Dependencies..");
     // resolves and locates the dependencies by parsing their POM files
     Dependency mainDependency;
@@ -119,6 +149,9 @@ public class Main {
     } else {
       throw new IllegalArgumentException(
           "Neither a dependency argument nor a groupId, artifactId, version arguments were provided.");
+    }
+    if (!commandLine.hasOption("output")) {
+      throw new IllegalArgumentException("The required option --output wasn't provided.");
     }
     ResolveCallback resolveCallback =
         (artifactFound, pomUrl, mavenRepo, dependencyList, dependency) -> {
@@ -167,6 +200,7 @@ public class Main {
               .setMainDependency(mainDependency)
               .setCallback(callback)
               .setDependencies(dependencyList)
+              .setRepositories(repositories)
               .setCompress(commandLine.hasOption("compress"))
               .setFilterAppInventorDependencies(
                   commandLine.hasOption("filter-appinventor-dependencies"))
@@ -176,6 +210,7 @@ public class Main {
     new DependencyResolver.Builder()
         .setDependency(mainDependency)
         .setCallback(resolveCallback)
+        .setRepositories(repositories)
         .resolve();
   }
 }

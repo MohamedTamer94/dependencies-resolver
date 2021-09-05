@@ -51,6 +51,8 @@ public class DependencyDownloader {
 
   // a flag to indicate weather to filter appinventor dependencies from the downloaded dependencies
   private static boolean filterAppInventorDependencies;
+  // list of all repositories which dependencies will be validated against
+  private static List<Repository> allRepositories = new ArrayList<>();
   // the list of the downloaded files
   List<File> downloadedFiles = new ArrayList<>();
   // the dependencies which should be downloaded
@@ -133,6 +135,7 @@ public class DependencyDownloader {
    * @param compress a flag to compress all files into one JAR/AAR
    * @param mainDependency the main dependency
    * @param verbose a flag to log debug messages
+   * @param repositories list of custom repository urls
    */
   private void resolveDependenciesFiles(
       List<Dependency> dependencies,
@@ -140,11 +143,17 @@ public class DependencyDownloader {
       boolean filterAppInventorDependencies,
       boolean compress,
       Dependency mainDependency,
-      boolean verbose) {
+      boolean verbose,
+      List<String> repositories) {
+    allRepositories = new ArrayList<>();
     this.callback = callback;
     this.compress = compress;
     this.mainDependency = mainDependency;
     this.verbose = verbose;
+    allRepositories.addAll(Repository.COMMON_MAVEN_REPOSITORIES);
+    for (String repoUrl : repositories) {
+      allRepositories.add(new Repository(repoUrl));
+    }
     DependencyDownloader.filterAppInventorDependencies = filterAppInventorDependencies;
     // don't perform download if we have already finished downloading
     if (done) {
@@ -297,7 +306,7 @@ public class DependencyDownloader {
           return;
         }
         URL fileDownloadUrl = null;
-        for (Repository repository : Repository.COMMON_MAVEN_REPOSITORIES) {
+        for (Repository repository : allRepositories) {
           try {
             fileDownloadUrl = new URL(repository.getUrl() + fileDownloadPath);
             try (ReadableByteChannel rbc = Channels.newChannel(fileDownloadUrl.openStream())) {
@@ -339,6 +348,8 @@ public class DependencyDownloader {
     private List<Dependency> dependencies = new ArrayList<>();
     // weather to log debug messages
     private boolean verbose = false;
+    // custom repositories for resolving dependencies
+    private List<String> repositories = new ArrayList<>();
 
     /**
      * Specifies weather to log debug messages
@@ -348,6 +359,11 @@ public class DependencyDownloader {
      */
     public Builder setVerbose(boolean verbose) {
       this.verbose = verbose;
+      return this;
+    }
+
+    public Builder setRepositories(List<String> repositories) {
+      this.repositories = repositories;
       return this;
     }
 
@@ -416,7 +432,8 @@ public class DependencyDownloader {
               filterAppInventorDependencies,
               compress,
               mainDependency,
-              verbose);
+              verbose,
+              repositories);
     }
   }
 }

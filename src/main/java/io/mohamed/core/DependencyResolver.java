@@ -82,6 +82,8 @@ public class DependencyResolver {
   ResolveCallback callback = null;
   // a flag to indicate that we have finished resolving dependencies
   private boolean done = false;
+  // the list of repositories to search against
+  private List<Repository> allRepositories;
 
   /**
    * Creates a new DependencyResolver
@@ -308,11 +310,14 @@ public class DependencyResolver {
    *
    * @param dependency the dependency to resolve dependencies for
    * @param callback the callback to call when the resolving is complete
+   * @param repositories custom repositories to search against
    */
-  private void resolveDependencies(Dependency dependency, ResolveCallback callback) {
+  private void resolveDependencies(
+      Dependency dependency, ResolveCallback callback, List<Repository> repositories) {
     this.callback = callback;
     this.artifactFound = false;
     repoIndex = 0;
+    allRepositories = repositories;
     resolve(dependency);
   }
 
@@ -335,17 +340,13 @@ public class DependencyResolver {
   }
 
   public void startResolverThread(Dependency dependency) {
-    // if repo index exceeds the maven repositories size, reset it to 0
-    if (repoIndex > (Repository.COMMON_MAVEN_REPOSITORIES.size() - 1)) {
-      repoIndex = 0;
-    }
     ResolverThread thread =
         new ResolverThread(
-            Repository.COMMON_MAVEN_REPOSITORIES.get(repoIndex),
+            allRepositories.get(repoIndex),
             dependency,
             (artifactFound, pomUrl, mavenRepo, dependencies, dependency1) -> {
               if (!artifactFound) {
-                if (repoIndex > (Repository.COMMON_MAVEN_REPOSITORIES.size() - 1)) {
+                if (repoIndex >= (allRepositories.size() - 1)) {
                   this.artifactFound = false;
                   this.pomDownloadUrl = pomUrl;
                   this.dependencies = dependencies;
@@ -381,7 +382,7 @@ public class DependencyResolver {
     if (!artifactFound) {
       System.err.println("Didn't find artifact " + dependency + " in any repository!");
       System.err.println("Searched in:");
-      for (Repository repo : Repository.COMMON_MAVEN_REPOSITORIES) {
+      for (Repository repo : allRepositories) {
         System.err.println(repo + pomDownloadUrl);
       }
       System.exit(0); // don't resolve any further dependencies
@@ -403,7 +404,7 @@ public class DependencyResolver {
       // load all dependencies for the loaded dependency
       for (Dependency dependency1 : dependencies) {
         dependenciesToLoad.add(dependency1);
-        resolveDependencies(dependency1, callback);
+        resolveDependencies(dependency1, callback, allRepositories);
       }
     }
     // keep track of running threads by removing all dead threads
@@ -429,9 +430,16 @@ public class DependencyResolver {
     private Dependency dependency;
     // the callback to call when resolving is done
     private ResolveCallback callback;
+    // custom repositories to search against
+    private List<String> repositoriesUrls = new ArrayList<>();
 
     public Builder setCallback(ResolveCallback callback) {
       this.callback = callback;
+      return this;
+    }
+
+    public Builder setRepositories(List<String> repositories) {
+      this.repositoriesUrls = repositories;
       return this;
     }
 
@@ -441,7 +449,11 @@ public class DependencyResolver {
     }
 
     public void resolve() {
-      new DependencyResolver().resolveDependencies(dependency, callback);
+      List<Repository> repositories = new ArrayList<>(Repository.COMMON_MAVEN_REPOSITORIES);
+      for (String repoUrl : repositoriesUrls) {
+        repositories.add(new Repository(repoUrl));
+      }
+      new DependencyResolver().resolveDependencies(dependency, callback, repositories);
     }
   }
 
@@ -537,7 +549,8 @@ public class DependencyResolver {
               Dependency resolvedDependency = getDependency(node, properties, parent, repo);
               if (resolvedDependency != null) {
                 parent = resolvedDependency;
-                resolveDependencies(resolvedDependency, DependencyResolver.this.callback);
+                resolveDependencies(
+                    resolvedDependency, DependencyResolver.this.callback, allRepositories);
               }
               break;
             case "dependencyManagement":
