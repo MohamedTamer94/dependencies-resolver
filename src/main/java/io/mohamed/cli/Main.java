@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -55,8 +56,10 @@ import org.apache.commons.cli.ParseException;
  * @author Mohamed Tamer
  */
 public class Main {
+  private static final ArrayList<Command> SUPPORTED_COMMANDS = new ArrayList<>();
+  private static final Options GENERAL_OPTIONS = new Options();
 
-  public static void main(String[] args) throws ParseException {
+  static {
     Option groupId =
         Option.builder().longOpt("groupId").desc("The aircraft group ID.").hasArg().build();
     Option artifactId =
@@ -84,8 +87,6 @@ public class Main {
             .hasArg()
             .desc("The dependency in gradle style : implementation 'com.test:test:1.0'")
             .build();
-    Option versionOption =
-        Option.builder("v").desc("Prints the dependencies-resolver version").build();
     Option repository =
         Option.builder("r")
             .desc(
@@ -106,21 +107,49 @@ public class Main {
     options.addOption(filterAppInventorDependencies);
     options.addOption(gradleDependency);
     options.addOption(help);
-    options.addOption(versionOption);
     options.addOption(repository);
+    SUPPORTED_COMMANDS.add(new Command("resolve", options));
+    Option versionOption =
+        Option.builder("v")
+            .longOpt("version")
+            .desc("Prints the dependencies-resolver version")
+            .build();
+    GENERAL_OPTIONS.addOption(versionOption);
+    GENERAL_OPTIONS.addOption(help);
+  }
+
+  public static void main(String[] args) throws ParseException {
+    Command currentCommand = null;
+    for (String arg : args) {
+      for (Command command : SUPPORTED_COMMANDS) {
+        if (command.getName().equals(arg)) {
+          currentCommand = command;
+        }
+      }
+    }
     CommandLineParser parser = new DefaultParser();
     final CommandLine commandLine;
-    try {
-      commandLine = parser.parse(options, args);
-    } catch (MissingOptionException e) {
-      System.out.println(e.getMessage());
-      new HelpFormatter().printHelp("java -jar dependencies-resolve-version-all.jar", options);
-      return;
+    if (currentCommand != null) {
+      try {
+        commandLine = parser.parse(currentCommand.getOptions(), args);
+      } catch (MissingOptionException e) {
+        System.out.println(e.getMessage());
+        new HelpFormatter()
+            .printHelp(
+                "java -jar dependencies-resolve-version-all.jar " + currentCommand.getName(),
+                currentCommand.getOptions());
+        return;
+      }
+    } else {
+      commandLine = parser.parse(GENERAL_OPTIONS, args);
     }
     if (commandLine.hasOption("help")) {
       System.out.println(
           "A java CLI to resolve all the dependencies declared for the a specific maven artifact.");
-      new HelpFormatter().printHelp("java -jar dependencies-resolve-version-all.jar", options);
+      new HelpFormatter()
+          .printHelp(
+              "java -jar dependencies-resolve-version-all.jar",
+              currentCommand == null ? GENERAL_OPTIONS : currentCommand.getOptions());
       return;
     }
     if (commandLine.hasOption("v")) {
