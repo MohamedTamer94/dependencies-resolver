@@ -37,6 +37,8 @@ import java.nio.file.StandardCopyOption;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.MissingOptionException;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
@@ -92,7 +94,14 @@ public class Main {
     options.addOption(filterAppInventorDependencies);
     options.addOption(gradleDependency);
     CommandLineParser parser = new DefaultParser();
-    CommandLine commandLine = parser.parse(options, args);
+    final CommandLine commandLine;
+    try {
+      commandLine = parser.parse(options, args);
+    } catch (MissingOptionException e) {
+      System.out.println(e.getMessage());
+      new HelpFormatter().printHelp("java -jar dependencies-resolve-version-all.jar", options);
+      return;
+    }
     System.out.println("Fetching Dependencies..");
     // resolves and locates the dependencies by parsing their POM files
     Dependency mainDependency;
