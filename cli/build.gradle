@@ -1,0 +1,19 @@
+plugins {
+    id 'java'
+}
+
+group 'io.mohamed.resolver'
+version '0.2-beta'
+
+repositories {
+    mavenCentral()
+    flatDir {
+        dirs '../libs'
+    }
+}
+
+dependencies {
+    implementation 'commons-cli:commons-cli:1.4'
+    implementation 'org.json:json:20210307'
+    implementation project(':core')
+}
