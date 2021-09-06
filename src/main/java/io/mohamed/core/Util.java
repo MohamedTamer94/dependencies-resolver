@@ -5,6 +5,12 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.ProviderNotFoundException;
+import java.nio.file.StandardCopyOption;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -47,5 +53,24 @@ public class Util {
   public static String getVersion() {
     // the Version class is generated in compile time in build.gradle
     return "Dependency Resolver - Version " + Version.VERSION;
+  }
+
+  /**
+   * Extracts a file from zip file
+   *
+   * @param zipFile the zip file path
+   * @param fileName the file name
+   * @param outputFile the output file path
+   * @throws ProviderNotFoundException if extracting file fails or the file doesn't exist
+   * @throws IOException if extracting file fails or the file doesn't exist
+   */
+  public static void extractFile(Path zipFile, String fileName, Path outputFile)
+      throws ProviderNotFoundException, IOException {
+    // Wrap the file system in a try-with-resources statement
+    // to auto-close it when finished and prevent a memory leak
+    try (FileSystem fileSystem = FileSystems.newFileSystem(zipFile, null)) {
+      Path fileToExtract = fileSystem.getPath(fileName);
+      Files.copy(fileToExtract, outputFile, StandardCopyOption.REPLACE_EXISTING);
+    }
   }
 }

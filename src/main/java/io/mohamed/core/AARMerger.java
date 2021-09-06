@@ -25,14 +25,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.ProviderNotFoundException;
 import java.nio.file.SimpleFileVisitor;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -96,14 +93,15 @@ public class AARMerger {
       if (Util.isAar(library)) {
         try {
           File androidManifestOutputFile = new File(library.getParentFile(), "AndroidManifest.xml");
-          extractFile(library.toPath(), "AndroidManifest.xml", androidManifestOutputFile.toPath());
+          Util.extractFile(
+              library.toPath(), "AndroidManifest.xml", androidManifestOutputFile.toPath());
           androidManifests.add(androidManifestOutputFile);
         } catch (IOException
             | ProviderNotFoundException ignored) { // the library has no android manifest
         }
         try {
           File classesJar = new File(library.getParentFile(), "classes.jar");
-          extractFile(library.toPath(), "classes.jar", classesJar.toPath());
+          Util.extractFile(library.toPath(), "classes.jar", classesJar.toPath());
           classesJars.add(classesJar);
         } catch (IOException | ProviderNotFoundException ignored) {
         }
@@ -305,24 +303,5 @@ public class AARMerger {
       }
     }
     return !filesCopied.isEmpty();
-  }
-
-  /**
-   * Extracts a file from zip file
-   *
-   * @param zipFile the zip file path
-   * @param fileName the file name
-   * @param outputFile the output file path
-   * @throws ProviderNotFoundException if extracting file fails or the file doesn't exist
-   * @throws IOException if extracting file fails or the file doesn't exist
-   */
-  public void extractFile(Path zipFile, String fileName, Path outputFile)
-      throws ProviderNotFoundException, IOException {
-    // Wrap the file system in a try-with-resources statement
-    // to auto-close it when finished and prevent a memory leak
-    try (FileSystem fileSystem = FileSystems.newFileSystem(zipFile, null)) {
-      Path fileToExtract = fileSystem.getPath(fileName);
-      Files.copy(fileToExtract, outputFile, StandardCopyOption.REPLACE_EXISTING);
-    }
   }
 }

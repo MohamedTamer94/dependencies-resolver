@@ -96,6 +96,12 @@ public class Main {
             .longOpt("repository")
             .build();
     Option help = Option.builder("h").longOpt("help").desc("Prints the help message").build();
+    Option jarOnly =
+        Option.builder("j")
+            .desc(
+                "If used, only jar files would be resolved, only classes.jar would be extracted from aars. Useful for extension developers.")
+            .longOpt("jarOnly")
+            .build();
     Options options = new Options();
     options.addOption(groupId);
     options.addOption(artifactId);
@@ -108,6 +114,7 @@ public class Main {
     options.addOption(gradleDependency);
     options.addOption(help);
     options.addOption(repository);
+    options.addOption(jarOnly);
     SUPPORTED_COMMANDS.add(new Command("resolve", options));
     Option versionOption =
         Option.builder("v")
@@ -148,8 +155,8 @@ public class Main {
           "A java CLI to resolve all the dependencies declared for the a specific maven artifact.");
       new HelpFormatter()
           .printHelp(
-              "java -jar dependencies-resolve-version-all.jar " + (currentCommand != null
-                  ? currentCommand.getName() : ""),
+              "java -jar dependencies-resolve-version-all.jar "
+                  + (currentCommand != null ? currentCommand.getName() : ""),
               currentCommand == null ? GENERAL_OPTIONS : currentCommand.getOptions());
       return;
     }
@@ -157,6 +164,7 @@ public class Main {
       System.out.println(Util.getVersion());
       return;
     }
+    // if the repository is null, make it an empty list
     List<String> repositories =
         Optional.ofNullable(commandLine.getOptionValues("repository"))
             .map(Arrays::stream)
@@ -231,6 +239,7 @@ public class Main {
               .setCallback(callback)
               .setDependencies(dependencyList)
               .setRepositories(repositories)
+              .setJarOnly(commandLine.hasOption("jarOnly"))
               .setCompress(commandLine.hasOption("compress"))
               .setFilterAppInventorDependencies(
                   commandLine.hasOption("filter-appinventor-dependencies"))

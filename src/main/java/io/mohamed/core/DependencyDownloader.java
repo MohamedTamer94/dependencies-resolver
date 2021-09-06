@@ -41,6 +41,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.apache.commons.io.FilenameUtils;
 
 /**
  * Downloads library files for the given dependencies
@@ -53,6 +54,10 @@ public class DependencyDownloader {
   private static boolean filterAppInventorDependencies;
   // list of all repositories which dependencies will be validated against
   private static List<Repository> allRepositories = new ArrayList<>();
+  // weather to include jar files only or not
+  private static boolean jarOnly;
+  // weather to log debug messages or not
+  private static boolean verbose;
   // the list of the downloaded files
   List<File> downloadedFiles = new ArrayList<>();
   // the dependencies which should be downloaded
@@ -69,8 +74,6 @@ public class DependencyDownloader {
   private boolean compress;
   // the main dependency
   private Dependency mainDependency;
-  // weather to log debug messages or not
-  private boolean verbose;
 
   /**
    * Creates a new DependencyDownloader
@@ -106,7 +109,7 @@ public class DependencyDownloader {
    * @param dependency the dependency
    * @return the output file created for the dependency.
    */
-  private static File getOutputFileForDependency(Dependency dependency) {
+  private static File getOutputFileForDependency(Dependency dependency, String extension) {
     String fileDownloadPath = getFileDownloadUrl(dependency);
     File localFileDir = Util.getLocalFilesDir();
     File cachesDir = new File(localFileDir, "caches");
@@ -122,7 +125,17 @@ public class DependencyDownloader {
       }
     }
     String fileName = fileDownloadPath.split("/")[fileDownloadPath.split("/").length - 1];
+    if (!extension.isEmpty() && !FilenameUtils.getExtension(fileName).equals(extension)) {
+      fileName =
+          FilenameUtils.removeExtension(fileName) + FilenameUtils.EXTENSION_SEPARATOR + extension;
+    }
     return new File(artifactDirectory, fileName);
+  }
+
+  private static void logVerbose(String message) {
+    if (verbose) {
+      System.out.println(message);
+    }
   }
 
   /**
@@ -136,6 +149,7 @@ public class DependencyDownloader {
    * @param mainDependency the main dependency
    * @param verbose a flag to log debug messages
    * @param repositories list of custom repository urls
+   * @param jarOnly includes jar files only
    */
   private void resolveDependenciesFiles(
       List<Dependency> dependencies,
@@ -144,12 +158,14 @@ public class DependencyDownloader {
       boolean compress,
       Dependency mainDependency,
       boolean verbose,
-      List<String> repositories) {
+      List<String> repositories,
+      boolean jarOnly) {
     allRepositories = new ArrayList<>();
     this.callback = callback;
     this.compress = compress;
     this.mainDependency = mainDependency;
-    this.verbose = verbose;
+    DependencyDownloader.verbose = verbose;
+    DependencyDownloader.jarOnly = jarOnly;
     allRepositories.addAll(Repository.COMMON_MAVEN_REPOSITORIES);
     for (String repoUrl : repositories) {
       allRepositories.add(new Repository(repoUrl));
@@ -286,8 +302,9 @@ public class DependencyDownloader {
       super.run();
       try {
         String fileDownloadPath = getFileDownloadUrl(dependency);
-        File outputFile = getOutputFileForDependency(dependency);
-        if (outputFile == null) {
+        File outputFile = getOutputFileForDependency(dependency, "");
+        File outputJarFile = getOutputFileForDependency(dependency, "jar");
+        if (outputFile == null || outputJarFile == null) {
           return;
         }
         if (filterAppInventorDependencies) {
@@ -299,7 +316,14 @@ public class DependencyDownloader {
             return;
           }
         }
-        if (outputFile.exists()) {
+        if (!jarOnly) {
+          if (outputFile.exists()) {
+            // this file was already downloaded in cache, we can directly report success
+            callback.done(outputFile, dependency);
+            interrupt();
+            return;
+          }
+        } else if (outputJarFile.exists()) {
           // this file was already downloaded in cache, we can directly report success
           callback.done(outputFile, dependency);
           interrupt();
@@ -323,8 +347,13 @@ public class DependencyDownloader {
           callback.done(null, dependency);
           return;
         }
+        if (jarOnly && Util.isAar(outputFile)) {
+          logVerbose("Extracting classes.jar from .aar file");
+          Util.extractFile(outputFile.toPath(), "classes.jar", outputJarFile.toPath());
+          logVerbose("Extracted classes.jar from .aar file");
+        }
         System.out.println("Downloaded " + fileDownloadUrl);
-        callback.done(outputFile, dependency);
+        callback.done(jarOnly ? outputJarFile : outputFile, dependency);
         interrupt();
         return;
       } catch (IOException ignored) {
@@ -350,6 +379,8 @@ public class DependencyDownloader {
     private boolean verbose = false;
     // custom repositories for resolving dependencies
     private List<String> repositories = new ArrayList<>();
+    // includes jar files only
+    private boolean jarOnly = false;
 
     /**
      * Specifies weather to log debug messages
@@ -362,6 +393,23 @@ public class DependencyDownloader {
       return this;
     }
 
+    /**
+     * Only includes jar files when downloading
+     *
+     * @param jarOnly true to include jar files only
+     * @return the Builder instance
+     */
+    public Builder setJarOnly(boolean jarOnly) {
+      this.jarOnly = jarOnly;
+      return this;
+    }
+
+    /**
+     * Specifies custom repository urls to search within
+     *
+     * @param repositories the repository url list
+     * @return the Builder instance
+     */
     public Builder setRepositories(List<String> repositories) {
       this.repositories = repositories;
       return this;
@@ -433,7 +481,8 @@ public class DependencyDownloader {
               compress,
               mainDependency,
               verbose,
-              repositories);
+              repositories,
+              jarOnly);
     }
   }
 }
