@@ -1,2 +1,2 @@
 # DependencyResolver
-[WIP] A java CLI to resolve all the dependencies declared for the a specific maven artifact. Please see the [Wiki](https://github.com/MohamedTamer94/DependencyResolver/wiki) for more information
+[WIP] A java CLI to resolve all the dependencies declared for the a specific maven artifact. Please see the [wiki](https://github.com/MohamedTamer94/DependencyResolver/wiki) for more information.
