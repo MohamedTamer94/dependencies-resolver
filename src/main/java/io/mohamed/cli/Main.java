@@ -76,7 +76,7 @@ public class Main {
         Option.builder().longOpt("version").desc("The aircraft version.").hasArg().build();
     Option aircraftType =
         Option.builder().longOpt("type").desc("The dependency version.").hasArg().build();
-    Option verbose = Option.builder().longOpt("verbose").desc("Show debug messages.").build();
+    Option verbose = Option.builder("v").longOpt("verbose").desc("Show debug messages.").build();
     Option output =
         Option.builder("o").longOpt("output").desc("The output directory.").hasArg().build();
     Option filterAppInventorDependencies =
