@@ -111,8 +111,7 @@ public class DependencyDownloader {
    */
   private static File getOutputFileForDependency(Dependency dependency, String extension) {
     String fileDownloadPath = getFileDownloadUrl(dependency);
-    File localFileDir = Util.getLocalFilesDir();
-    File cachesDir = new File(localFileDir, "caches");
+    File cachesDir = Util.getCachesDirectory();
     if (!cachesDir.exists() && !cachesDir.mkdir()) {
       System.err.println("Failed to create caches directory.");
       return null;
@@ -260,7 +259,7 @@ public class DependencyDownloader {
       } else {
         File result =
             new File(
-                Util.getLocalFilesDir(),
+                Util.getMergedLibrariesDirectory(),
                 mainDependency.getArtifactId() + "-" + mainDependency.getVersion() + ".jar");
         new JARMerger().merge(downloadedFiles, result);
         downloadedFiles = new ArrayList<>(Collections.singletonList(result));

@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.ProviderNotFoundException;
 import java.nio.file.StandardCopyOption;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -72,5 +73,17 @@ public class Util {
       Path fileToExtract = fileSystem.getPath(fileName);
       Files.copy(fileToExtract, outputFile, StandardCopyOption.REPLACE_EXISTING);
     }
+  }
+
+  public static void clearCache() throws IOException {
+    FileUtils.deleteDirectory(getCachesDirectory());
+  }
+
+  public static File getMergedLibrariesDirectory() {
+    return new File(getCachesDirectory(), "merged");
+  }
+
+  public static File getCachesDirectory() {
+    return new File(getLocalFilesDir(), "caches");
   }
 }

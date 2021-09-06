@@ -31,8 +31,10 @@ import io.mohamed.core.Util;
 import io.mohamed.core.callback.FilesDownloadedCallback;
 import io.mohamed.core.callback.ResolveCallback;
 import io.mohamed.core.model.Dependency;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -123,6 +125,7 @@ public class Main {
             .build();
     GENERAL_OPTIONS.addOption(versionOption);
     GENERAL_OPTIONS.addOption(help);
+    SUPPORTED_COMMANDS.add(new Command("clean", new Options()));
   }
 
   public static void main(String[] args) throws ParseException {
@@ -163,6 +166,22 @@ public class Main {
     if (commandLine.hasOption("v")) {
       System.out.println(Util.getVersion());
       return;
+    }
+    if (currentCommand != null && currentCommand.getName().equals("clean")) {
+      try {
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        System.out.print("Are you sure you want to delete cache files [Y/N]: ");
+        if (br.readLine().equalsIgnoreCase("y")) {
+          System.out.println("Cleaning caches..");
+          Util.clearCache();
+          System.out.println("Clear Cache Successful..");
+        }
+        return;
+      } catch (IOException e) {
+        System.err.println("Failed to clear cache..");
+        e.printStackTrace();
+        return;
+      }
     }
     // if the repository is null, make it an empty list
     List<String> repositories =

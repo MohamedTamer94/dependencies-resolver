@@ -495,8 +495,7 @@ public class DependencyResolver {
     public void run() {
       try {
         URL url = new URL(repo + pomDownloadUrl);
-        File localFileDir = Util.getLocalFilesDir();
-        File cachesDir = new File(localFileDir, "caches");
+        File cachesDir = Util.getCachesDirectory();
         if (!cachesDir.exists() && !cachesDir.mkdir()) {
           System.err.println("Failed to create caches directory.");
           return;
