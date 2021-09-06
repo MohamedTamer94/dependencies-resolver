@@ -31,6 +31,7 @@ import io.mohamed.core.Util;
 import io.mohamed.core.callback.FilesDownloadedCallback;
 import io.mohamed.core.callback.ResolveCallback;
 import io.mohamed.core.model.Dependency;
+import io.mohamed.core.model.Repository;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -40,7 +41,10 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.prefs.BackingStoreException;
+import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.cli.CommandLine;
@@ -51,6 +55,7 @@ import org.apache.commons.cli.MissingOptionException;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.json.JSONArray;
 
 /**
  * A CLI to resolve dependencies for the given maven artifact
@@ -60,6 +65,7 @@ import org.apache.commons.cli.ParseException;
 public class Main {
   private static final ArrayList<Command> SUPPORTED_COMMANDS = new ArrayList<>();
   private static final Options GENERAL_OPTIONS = new Options();
+  private static final Preferences preferences = Preferences.userRoot().node(Main.class.getName());
 
   static {
     Option groupId =
@@ -126,6 +132,17 @@ public class Main {
     GENERAL_OPTIONS.addOption(versionOption);
     GENERAL_OPTIONS.addOption(help);
     SUPPORTED_COMMANDS.add(new Command("clean", new Options()));
+    Option repositoryOption =
+        Option.builder("r")
+            .longOpt("repository")
+            .hasArg()
+            .desc("The maven repository url")
+            .required()
+            .build();
+    Options addRemoveRepositoryOptions = new Options();
+    addRemoveRepositoryOptions.addOption(repositoryOption);
+    SUPPORTED_COMMANDS.add(new Command("add-repository", addRemoveRepositoryOptions));
+    SUPPORTED_COMMANDS.add(new Command("remove-repository", addRemoveRepositoryOptions));
   }
 
   public static void main(String[] args) throws ParseException {
@@ -173,15 +190,59 @@ public class Main {
         System.out.print("Are you sure you want to delete cache files [Y/N]: ");
         if (br.readLine().equalsIgnoreCase("y")) {
           System.out.println("Cleaning caches..");
+          preferences.clear();
           Util.clearCache();
           System.out.println("Clear Cache Successful..");
         }
         return;
-      } catch (IOException e) {
+      } catch (IOException | BackingStoreException e) {
         System.err.println("Failed to clear cache..");
         e.printStackTrace();
         return;
       }
+    }
+    if (currentCommand != null && currentCommand.getName().equals("add-repository")) {
+      String repositories = preferences.get("repos", "[]");
+      String repositoryUrl = commandLine.getOptionValue("repository");
+      JSONArray reposArray = new JSONArray(repositories);
+      for (int i = 0; i < reposArray.length(); i++) {
+        String value = reposArray.getString(i);
+        if (value.equals(repositoryUrl)) {
+          System.out.println("Ignoring to add already existing repository " + repositoryUrl);
+          return;
+        }
+      }
+      for (Repository repository : Repository.COMMON_MAVEN_REPOSITORIES) {
+        if (repository.getUrl().equals(repositoryUrl)) {
+          System.out.println("Ignoring to add already existing repository " + repositoryUrl);
+          return;
+        }
+      }
+      reposArray.put(repositoryUrl);
+      preferences.put("repos", reposArray.toString());
+      System.out.println("Successfully added repository!");
+      return;
+    }
+    if (currentCommand != null && currentCommand.getName().equals("remove-repository")) {
+      String repositories = preferences.get("repos", "[]");
+      String repositoryUrl = commandLine.getOptionValue("repository");
+      JSONArray reposArray = new JSONArray(repositories);
+      int repoIndex = -1;
+      for (int i = 0; i < reposArray.length(); i++) {
+        String value = reposArray.getString(i);
+        if (value.equals(repositoryUrl)) {
+          repoIndex = i;
+          break;
+        }
+      }
+      if (repoIndex == -1) {
+        System.out.println("Ignoring to remove non-existing repository " + repositoryUrl);
+      } else {
+        reposArray.remove(repoIndex);
+        preferences.put("repos", reposArray.toString());
+        System.out.println("Successfully removed repository..");
+      }
+      return;
     }
     // if the repository is null, make it an empty list
     List<String> repositories =
@@ -189,6 +250,12 @@ public class Main {
             .map(Arrays::stream)
             .orElseGet(Stream::empty)
             .collect(Collectors.toList());
+    String repositoriesFromPrefs = preferences.get("repos", "[]");
+    JSONArray reposArray = new JSONArray(repositoriesFromPrefs);
+    repositories.addAll(
+        reposArray.toList().stream()
+            .map(object -> Objects.toString(object, ""))
+            .collect(Collectors.toList()));
     System.out.println("Fetching Dependencies..");
     // resolves and locates the dependencies by parsing their POM files
     Dependency mainDependency;

@@ -167,6 +167,9 @@ public class DependencyDownloader {
     DependencyDownloader.jarOnly = jarOnly;
     allRepositories.addAll(Repository.COMMON_MAVEN_REPOSITORIES);
     for (String repoUrl : repositories) {
+      if (!repoUrl.endsWith("/")) {
+        repoUrl = repoUrl + "/";
+      }
       allRepositories.add(new Repository(repoUrl));
     }
     DependencyDownloader.filterAppInventorDependencies = filterAppInventorDependencies;

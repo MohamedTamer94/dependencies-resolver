@@ -451,6 +451,9 @@ public class DependencyResolver {
     public void resolve() {
       List<Repository> repositories = new ArrayList<>(Repository.COMMON_MAVEN_REPOSITORIES);
       for (String repoUrl : repositoriesUrls) {
+        if (!repoUrl.endsWith("/")) {
+          repoUrl = repoUrl + "/";
+        }
         repositories.add(new Repository(repoUrl));
       }
       new DependencyResolver().resolveDependencies(dependency, callback, repositories);
