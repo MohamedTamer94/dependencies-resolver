@@ -25,14 +25,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.ProviderNotFoundException;
 import java.nio.file.SimpleFileVisitor;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -96,14 +93,15 @@ public class AARMerger {
       if (Util.isAar(library)) {
         try {
           File androidManifestOutputFile = new File(library.getParentFile(), "AndroidManifest.xml");
-          extractFile(library.toPath(), "AndroidManifest.xml", androidManifestOutputFile.toPath());
+          Util.extractFile(
+              library.toPath(), "AndroidManifest.xml", androidManifestOutputFile.toPath());
           androidManifests.add(androidManifestOutputFile);
         } catch (IOException
             | ProviderNotFoundException ignored) { // the library has no android manifest
         }
         try {
           File classesJar = new File(library.getParentFile(), "classes.jar");
-          extractFile(library.toPath(), "classes.jar", classesJar.toPath());
+          Util.extractFile(library.toPath(), "classes.jar", classesJar.toPath());
           classesJars.add(classesJar);
         } catch (IOException | ProviderNotFoundException ignored) {
         }
@@ -130,7 +128,7 @@ public class AARMerger {
       }
     }
     // merge android manifest files into one file
-    File mainManifest = new File(Util.getLocalFilesDir(), "AndroidManifest.xml");
+    File mainManifest = new File(Util.getMergedLibrariesDirectory(), "AndroidManifest.xml");
     PrintWriter writer = new PrintWriter(mainManifest, "UTF-8");
     writer.println(
         "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
@@ -153,7 +151,7 @@ public class AARMerger {
     }
     // merge classes.jar
     System.out.println("Merging Class Files..");
-    File mainClassesJar = new File(Util.getLocalFilesDir(), "classes.jar");
+    File mainClassesJar = new File(Util.getMergedLibrariesDirectory(), "classes.jar");
     new JARMerger().merge(classesJars, mainClassesJar);
     System.out.println("Successfully Merged Class Files..");
     System.out.println("Merging Resources..");
@@ -175,7 +173,7 @@ public class AARMerger {
       System.out.println("[WARNING] Failed to set AAPT tool executable.");
     }
     Util.copyResource(aaptTool, aaptToolFile);
-    File outputDir = new File(Util.getLocalFilesDir(), "res");
+    File outputDir = new File(Util.getMergedLibrariesDirectory(), "res");
     if (!outputDir.exists()) {
       if (!outputDir.mkdir()) {
         System.out.println("[WARNING] Failed to create output resources directory");
@@ -195,9 +193,10 @@ public class AARMerger {
         new MergedResourceWriter(outputDir, cruncher, false, false, null);
     mergedResourceWriter.setInsertSourceMarkers(true);
     merger.mergeData(mergedResourceWriter, false);
+    // generate the final aar
     File aar =
         new File(
-            Util.getLocalFilesDir(),
+            Util.getMergedLibrariesDirectory(),
             mainDependency.getArtifactId() + "-" + mainDependency.getVersion() + ".aar");
     try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(aar))) {
       // add assets
@@ -305,24 +304,5 @@ public class AARMerger {
       }
     }
     return !filesCopied.isEmpty();
-  }
-
-  /**
-   * Extracts a file from zip file
-   *
-   * @param zipFile the zip file path
-   * @param fileName the file name
-   * @param outputFile the output file path
-   * @throws ProviderNotFoundException if extracting file fails or the file doesn't exist
-   * @throws IOException if extracting file fails or the file doesn't exist
-   */
-  public void extractFile(Path zipFile, String fileName, Path outputFile)
-      throws ProviderNotFoundException, IOException {
-    // Wrap the file system in a try-with-resources statement
-    // to auto-close it when finished and prevent a memory leak
-    try (FileSystem fileSystem = FileSystems.newFileSystem(zipFile, null)) {
-      Path fileToExtract = fileSystem.getPath(fileName);
-      Files.copy(fileToExtract, outputFile, StandardCopyOption.REPLACE_EXISTING);
-    }
   }
 }
