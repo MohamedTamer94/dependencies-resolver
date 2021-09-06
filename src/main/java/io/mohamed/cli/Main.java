@@ -148,7 +148,8 @@ public class Main {
           "A java CLI to resolve all the dependencies declared for the a specific maven artifact.");
       new HelpFormatter()
           .printHelp(
-              "java -jar dependencies-resolve-version-all.jar",
+              "java -jar dependencies-resolve-version-all.jar " + (currentCommand != null
+                  ? currentCommand.getName() : ""),
               currentCommand == null ? GENERAL_OPTIONS : currentCommand.getOptions());
       return;
     }
