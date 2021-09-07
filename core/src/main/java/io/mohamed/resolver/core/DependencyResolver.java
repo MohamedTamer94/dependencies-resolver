@@ -92,7 +92,9 @@ public class DependencyResolver {
    *
    * @see DependencyResolver.Builder
    */
-  private DependencyResolver() {}
+  private DependencyResolver() {
+    loadedDependencies = new HashMap<>();
+  }
 
   public static boolean isNumeric(String str) {
     try {
@@ -111,6 +113,9 @@ public class DependencyResolver {
    * @return the dependency url
    */
   private static String getPomDownloadUrl(Dependency dependency) {
+    if (dependency == null) {
+      return "";
+    }
     return dependency.getGroupId().replaceAll("\\.", "/")
         + "/"
         + dependency.getArtifactId()
@@ -318,7 +323,6 @@ public class DependencyResolver {
     this.artifactFound = false;
     repoIndex = 0;
     allRepositories = repositories;
-    loadedDependencies = new HashMap<>();
     resolve(dependency);
   }
 
@@ -518,6 +522,11 @@ public class DependencyResolver {
     public void run() {
       try {
         URL url = new URL(repo + pomDownloadUrl);
+        /*if (pomDownloadUrl.isEmpty()) {
+          dependencyResolverCallback.error("Null Dependency Provided..");
+          callback.done(false, pomDownloadUrl, mavenRepo, dependencies, dependency);
+          return;
+        }*/
         File cachesDir = Util.getCachesDirectory();
         File artifactDirectory =
             new File(cachesDir, pomDownloadUrl.substring(0, pomDownloadUrl.lastIndexOf('/')));

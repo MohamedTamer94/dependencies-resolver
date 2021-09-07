@@ -1,4 +1,5 @@
 rootProject.name = 'dependencies-resolver'
 include 'core'
 include 'cli'
+include 'gui'
 
