@@ -27,6 +27,8 @@ package io.mohamed.core;
 
 import com.android.ide.common.res2.MergingException;
 import com.android.manifmerger.ManifestMerger2.MergeFailureException;
+import io.mohamed.core.callback.DependencyResolverCallback;
+import io.mohamed.core.callback.DependencyResolverCallback.MergeStage;
 import io.mohamed.core.callback.DownloadCallback;
 import io.mohamed.core.callback.FilesDownloadedCallback;
 import io.mohamed.core.model.Dependency;
@@ -58,6 +60,8 @@ public class DependencyDownloader {
   private static boolean jarOnly;
   // weather to log debug messages or not
   private static boolean verbose;
+  // the dependency resolver callback
+  private static DependencyResolverCallback dependencyResolverCallback;
   // the list of the downloaded files
   List<File> downloadedFiles = new ArrayList<>();
   // the dependencies which should be downloaded
@@ -112,15 +116,11 @@ public class DependencyDownloader {
   private static File getOutputFileForDependency(Dependency dependency, String extension) {
     String fileDownloadPath = getFileDownloadUrl(dependency);
     File cachesDir = Util.getCachesDirectory();
-    if (!cachesDir.exists() && !cachesDir.mkdir()) {
-      System.err.println("Failed to create caches directory.");
-      return null;
-    }
     File artifactDirectory =
         new File(cachesDir, fileDownloadPath.substring(0, fileDownloadPath.lastIndexOf('/')));
     if (!artifactDirectory.exists()) {
       if (!artifactDirectory.mkdirs()) {
-        System.out.println("[WARNING] Failed to create some artifact directories");
+        dependencyResolverCallback.info("[WARNING] Failed to create some artifact directories");
       }
     }
     String fileName = fileDownloadPath.split("/")[fileDownloadPath.split("/").length - 1];
@@ -129,12 +129,6 @@ public class DependencyDownloader {
           FilenameUtils.removeExtension(fileName) + FilenameUtils.EXTENSION_SEPARATOR + extension;
     }
     return new File(artifactDirectory, fileName);
-  }
-
-  private static void logVerbose(String message) {
-    if (verbose) {
-      System.out.println(message);
-    }
   }
 
   /**
@@ -149,6 +143,7 @@ public class DependencyDownloader {
    * @param verbose a flag to log debug messages
    * @param repositories list of custom repository urls
    * @param jarOnly includes jar files only
+   * @param dependencyResolverCallback the dependency resolver callback
    */
   private void resolveDependenciesFiles(
       List<Dependency> dependencies,
@@ -158,11 +153,13 @@ public class DependencyDownloader {
       Dependency mainDependency,
       boolean verbose,
       List<String> repositories,
-      boolean jarOnly) {
+      boolean jarOnly,
+      DependencyResolverCallback dependencyResolverCallback) {
     allRepositories = new ArrayList<>();
     this.callback = callback;
     this.compress = compress;
     this.mainDependency = mainDependency;
+    DependencyDownloader.dependencyResolverCallback = dependencyResolverCallback;
     DependencyDownloader.verbose = verbose;
     DependencyDownloader.jarOnly = jarOnly;
     allRepositories.addAll(Repository.COMMON_MAVEN_REPOSITORIES);
@@ -220,12 +217,12 @@ public class DependencyDownloader {
     if (dependenciesToLoad.isEmpty()) { // all dependencies has been downloaded
       done = true;
       if (compress) {
-        System.out.println("Compressing..");
+        dependencyResolverCallback.merging(MergeStage.START);
         boolean result = mergeLibraries();
         if (result) {
-          System.out.println("Compress Successful..");
+          dependencyResolverCallback.mergeSuccess();
         } else {
-          System.err.println("Compress Failed..");
+          dependencyResolverCallback.mergeFailed();
         }
       }
       if (callback != null) {
@@ -254,7 +251,9 @@ public class DependencyDownloader {
   private boolean mergeLibraries() {
     try {
       if (hasAnyAar()) {
-        File result = new AARMerger().merge(verbose, downloadedFiles, mainDependency);
+        File result =
+            new AARMerger()
+                .merge(verbose, downloadedFiles, mainDependency, dependencyResolverCallback);
         if (result != null) {
           downloadedFiles = new ArrayList<>(Collections.singletonList(result));
           return true;
@@ -306,9 +305,6 @@ public class DependencyDownloader {
         String fileDownloadPath = getFileDownloadUrl(dependency);
         File outputFile = getOutputFileForDependency(dependency, "");
         File outputJarFile = getOutputFileForDependency(dependency, "jar");
-        if (outputFile == null || outputJarFile == null) {
-          return;
-        }
         if (filterAppInventorDependencies) {
           AppInvDependencyManager cloner = new AppInvDependencyManager();
           if (cloner.dependencyExists(dependency)) {
@@ -336,7 +332,7 @@ public class DependencyDownloader {
           try {
             fileDownloadUrl = new URL(repository.getUrl() + fileDownloadPath);
             try (ReadableByteChannel rbc = Channels.newChannel(fileDownloadUrl.openStream())) {
-              System.out.println("Downloading " + fileDownloadUrl);
+              dependencyResolverCallback.dependencyFileDownloading(fileDownloadUrl.toString());
               try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                 fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
                 break;
@@ -350,11 +346,13 @@ public class DependencyDownloader {
           return;
         }
         if (jarOnly && Util.isAar(outputFile)) {
-          logVerbose("Extracting classes.jar from .aar file");
+          dependencyResolverCallback.verbose("Extracting classes.jar from .aar file");
           Util.extractFile(outputFile.toPath(), "classes.jar", outputJarFile.toPath());
-          logVerbose("Extracted classes.jar from .aar file");
+          dependencyResolverCallback.verbose("Extracted classes.jar from .aar file");
         }
-        System.out.println("Downloaded " + fileDownloadUrl);
+        if (fileDownloadUrl != null) {
+          dependencyResolverCallback.dependencyFileDownloaded(fileDownloadUrl.toString());
+        }
         callback.done(jarOnly ? outputJarFile : outputFile, dependency);
         interrupt();
         return;
@@ -383,6 +381,8 @@ public class DependencyDownloader {
     private List<String> repositories = new ArrayList<>();
     // includes jar files only
     private boolean jarOnly = false;
+    // the dependency resolver callback
+    private DependencyResolverCallback dependencyResolverCallback;
 
     /**
      * Specifies weather to log debug messages
@@ -392,6 +392,18 @@ public class DependencyDownloader {
      */
     public Builder setVerbose(boolean verbose) {
       this.verbose = verbose;
+      return this;
+    }
+
+    /**
+     * Specifies the dependency resolver callback
+     *
+     * @param dependencyResolverCallback the dependency resolver callback
+     * @return the builder instance
+     */
+    public Builder setDependencyResolverCallback(
+        DependencyResolverCallback dependencyResolverCallback) {
+      this.dependencyResolverCallback = dependencyResolverCallback;
       return this;
     }
 
@@ -475,6 +487,9 @@ public class DependencyDownloader {
 
     /** Starts resolving dependency files, using the given input */
     public void resolve() {
+      if (dependencyResolverCallback == null) {
+        throw new IllegalArgumentException("Dependency Resolver Callback must be set.");
+      }
       new DependencyDownloader()
           .resolveDependenciesFiles(
               dependencies,
@@ -484,7 +499,8 @@ public class DependencyDownloader {
               mainDependency,
               verbose,
               repositories,
-              jarOnly);
+              jarOnly,
+              dependencyResolverCallback);
     }
   }
 }

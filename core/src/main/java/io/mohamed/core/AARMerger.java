@@ -17,6 +17,8 @@ import com.android.manifmerger.XmlDocument;
 import com.android.utils.ILogger;
 import com.android.utils.StdLogger;
 import com.android.utils.StdLogger.Level;
+import io.mohamed.core.callback.DependencyResolverCallback;
+import io.mohamed.core.callback.DependencyResolverCallback.MergeStage;
 import io.mohamed.core.model.Dependency;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -47,8 +49,9 @@ import org.apache.commons.io.IOUtils;
  * @author Mohamed Tamer
  */
 public class AARMerger {
-  // weather to print debug messages
-  private boolean verbose;
+
+  // the dependency downloader callback
+  private DependencyResolverCallback callback;
 
   /**
    * Saves the manifest XmlDocument to a file
@@ -78,10 +81,14 @@ public class AARMerger {
    * @throws MergeFailureException when an error occurs when merging android manifests
    * @throws MergingException when resources merging fails
    */
-  public File merge(boolean verbose, List<File> downloadedFiles, Dependency mainDependency)
+  public File merge(
+      boolean verbose,
+      List<File> downloadedFiles,
+      Dependency mainDependency,
+      DependencyResolverCallback callback)
       throws IOException, MergeFailureException, MergingException {
-    this.verbose = verbose;
-    System.out.println("Merging Libraries..");
+    // weather to print debug messages
+    this.callback = callback;
     // collect and extract android manifest and classes.jar files
     List<File> androidManifests = new ArrayList<>();
     List<File> classesJars = new ArrayList<>();
@@ -128,6 +135,7 @@ public class AARMerger {
       }
     }
     // merge android manifest files into one file
+    callback.merging(MergeStage.MERGE_MANIFEST);
     File mainManifest = new File(Util.getMergedLibrariesDirectory(), "AndroidManifest.xml");
     PrintWriter writer = new PrintWriter(mainManifest, "UTF-8");
     writer.println(
@@ -144,17 +152,17 @@ public class AARMerger {
       XmlDocument xmlDocument =
           report.getMergedXmlDocument(MergingReport.MergedManifestKind.MERGED);
       save(xmlDocument, mainManifest);
-      System.out.println("Successfully merged android manifests..");
+      callback.merging(MergeStage.MERGE_MANIFEST_SUCCESS);
     } else {
-      System.err.println("Error merging android manifests.");
-      System.err.println(report.getReportString());
+      callback.merging(MergeStage.MERGE_MANIFEST_FAILED);
+      callback.error(report.getReportString());
     }
     // merge classes.jar
-    System.out.println("Merging Class Files..");
+    callback.merging(MergeStage.MERGE_CLASS_FILES);
     File mainClassesJar = new File(Util.getMergedLibrariesDirectory(), "classes.jar");
     new JARMerger().merge(classesJars, mainClassesJar);
-    System.out.println("Successfully Merged Class Files..");
-    System.out.println("Merging Resources..");
+    callback.merging(MergeStage.MERGE_CLASS_FILES_SUCCESS);
+    callback.merging(MergeStage.MERGE_RESOURCES);
     // merge resources using Android AAPT tool
     String aaptTool;
     String osName = System.getProperty("os.name");
@@ -165,18 +173,18 @@ public class AARMerger {
     } else if (osName.startsWith("Windows")) {
       aaptTool = "/windows/aapt";
     } else {
-      System.err.println("Cannot run AAPT on OS " + osName);
+      callback.error("Cannot run AAPT on OS " + osName);
       return null;
     }
     File aaptToolFile = File.createTempFile("aapt", "");
     if (!aaptToolFile.setExecutable(true)) {
-      System.out.println("[WARNING] Failed to set AAPT tool executable.");
+      callback.info("[WARNING] Failed to set AAPT tool executable.");
     }
     Util.copyResource(aaptTool, aaptToolFile);
     File outputDir = new File(Util.getMergedLibrariesDirectory(), "res");
     if (!outputDir.exists()) {
       if (!outputDir.mkdir()) {
-        System.out.println("[WARNING] Failed to create output resources directory");
+        callback.info("[WARNING] Failed to create output resources directory");
       }
     }
     PngCruncher cruncher =
@@ -194,6 +202,7 @@ public class AARMerger {
     mergedResourceWriter.setInsertSourceMarkers(true);
     merger.mergeData(mergedResourceWriter, false);
     // generate the final aar
+    callback.merging(MergeStage.MERGE_RESOURCES_SUCCESS);
     File aar =
         new File(
             Util.getMergedLibrariesDirectory(),
@@ -201,21 +210,15 @@ public class AARMerger {
     try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(aar))) {
       // add assets
       for (File assetDir : assetsDirectory) {
-        if (verbose) {
-          System.out.println("Adding directory " + assetDir);
-        }
+        callback.verbose("Adding directory " + assetDir);
         addDirectory(assetDir, out);
       }
       for (File jniDir : jniDirectories) {
-        if (verbose) {
-          System.out.println("Adding directory " + jniDir);
-        }
+        callback.verbose("Adding directory " + jniDir);
         addDirectory(jniDir, out);
       }
       for (File libDir : libsDirectory) {
-        if (verbose) {
-          System.out.println("Adding directory " + libDir);
-        }
+        callback.verbose("Adding directory " + libDir);
         addDirectory(libDir, out);
       }
       addFile(mainClassesJar, "classes.jar", out);
@@ -285,15 +288,13 @@ public class AARMerger {
         File entryDestination = new File(outputDir, entry.getName());
         if (entry.isDirectory()) {
           if (!entryDestination.exists() && !entryDestination.mkdirs()) {
-            System.out.println("[WARNING] Failed to create entry destination");
+            callback.info("[WARNING] Failed to create entry destination");
           }
         } else {
-          if (verbose) {
-            System.out.println("Extracting to " + entryDestination.getAbsolutePath());
-          }
+          callback.verbose("Extracting to " + entryDestination.getAbsolutePath());
           if (!entryDestination.getParentFile().exists()
               && !entryDestination.getParentFile().mkdirs()) {
-            System.out.println("[WARNING] Failed to create entry destination");
+            callback.info("[WARNING] Failed to create entry destination");
           }
           try (InputStream in = zipFile.getInputStream(entry);
               OutputStream out = new FileOutputStream(entryDestination)) {

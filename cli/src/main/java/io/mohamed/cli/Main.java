@@ -28,6 +28,7 @@ package io.mohamed.cli;
 import io.mohamed.core.DependencyDownloader.Builder;
 import io.mohamed.core.DependencyResolver;
 import io.mohamed.core.Util;
+import io.mohamed.core.callback.DependencyResolverCallback;
 import io.mohamed.core.callback.FilesDownloadedCallback;
 import io.mohamed.core.callback.ResolveCallback;
 import io.mohamed.core.model.Dependency;
@@ -180,7 +181,7 @@ public class Main {
               currentCommand == null ? GENERAL_OPTIONS : currentCommand.getOptions());
       return;
     }
-    if (commandLine.hasOption("v")) {
+    if (commandLine.hasOption("version")) {
       System.out.println(Util.getVersion());
       return;
     }
@@ -277,6 +278,94 @@ public class Main {
     if (!commandLine.hasOption("output")) {
       throw new IllegalArgumentException("The required option --output wasn't provided.");
     }
+    // For the CLI, all logs are printed to the stdout
+    DependencyResolverCallback dependencyResolverCallback =
+        new DependencyResolverCallback() {
+          @Override
+          public void dependencyPomDownloading(String url) {
+            System.out.println("Downloading " + url);
+          }
+
+          @Override
+          public void dependencyPomDownloaded(String url) {
+            System.out.println("Downloaded " + url);
+          }
+
+          @Override
+          public void dependencyPomParsing(String url) {
+            System.out.println("Parsing " + url);
+          }
+
+          @Override
+          public void dependencyPomParsed(String url) {
+            System.out.println("Parsed " + url);
+          }
+
+          @Override
+          public void dependencyFileDownloading(String url) {
+            System.out.println("Downloading " + url);
+          }
+
+          @Override
+          public void dependencyFileDownloaded(String url) {
+            System.out.println("Downloaded " + url);
+          }
+
+          @Override
+          public void merging(MergeStage stage) {
+            switch (stage) {
+              case MERGE_MANIFEST:
+                System.out.println("Merging Android Manifests..");
+                break;
+              case MERGE_MANIFEST_FAILED:
+                System.err.println("Failed to Merge Android Manifests..");
+                break;
+              case MERGE_CLASS_FILES:
+                System.out.println("Merging Class Files..");
+                break;
+              case MERGE_MANIFEST_SUCCESS:
+                System.out.println("Successfully Merged Android Manifests..");
+                break;
+              case START:
+                System.out.println("Merging Libraries..");
+                break;
+              case MERGE_RESOURCES:
+                System.out.println("Merging Resources..");
+                break;
+              case MERGE_RESOURCES_SUCCESS:
+                System.out.println("Successfully Merged Resources..");
+              case MERGE_CLASS_FILES_SUCCESS:
+                System.out.println("Successfully merged class files..");
+            }
+          }
+
+          @Override
+          public void mergeSuccess() {
+            System.out.println("Successfully Merged Libraries..");
+          }
+
+          @Override
+          public void mergeFailed() {
+            System.out.println("Failed to merge libraries..");
+          }
+
+          @Override
+          public void verbose(String message) {
+            if (commandLine.hasOption("verbose")) {
+              System.out.println(message);
+            }
+          }
+
+          @Override
+          public void error(String message) {
+            System.err.println(message);
+          }
+
+          @Override
+          public void info(String message) {
+            System.out.println(message);
+          }
+        };
     ResolveCallback resolveCallback =
         (artifactFound, pomUrl, mavenRepo, dependencyList, dependency) -> {
           if (dependencyList.isEmpty()) {
@@ -327,6 +416,7 @@ public class Main {
               .setRepositories(repositories)
               .setJarOnly(commandLine.hasOption("jarOnly"))
               .setCompress(commandLine.hasOption("compress"))
+              .setDependencyResolverCallback(dependencyResolverCallback)
               .setFilterAppInventorDependencies(
                   commandLine.hasOption("filter-appinventor-dependencies"))
               .setVerbose(commandLine.hasOption("verbose"))
@@ -334,6 +424,7 @@ public class Main {
         };
     new DependencyResolver.Builder()
         .setDependency(mainDependency)
+        .setDependencyResolverCallback(dependencyResolverCallback)
         .setCallback(resolveCallback)
         .setRepositories(repositories)
         .resolve();

@@ -25,6 +25,7 @@
 
 package io.mohamed.core;
 
+import io.mohamed.core.callback.DependencyResolverCallback;
 import io.mohamed.core.callback.ResolveCallback;
 import io.mohamed.core.model.Dependency;
 import io.mohamed.core.model.ProjectProperty;
@@ -84,6 +85,7 @@ public class DependencyResolver {
   private boolean done = false;
   // the list of repositories to search against
   private List<Repository> allRepositories;
+  private DependencyResolverCallback dependencyResolverCallback;
 
   /**
    * Creates a new DependencyResolver
@@ -180,12 +182,6 @@ public class DependencyResolver {
         }
         String preferredVersion = null;
         for (String version : versions) {
-          System.out.println(
-              version
-                  + " compared to "
-                  + startVersion
-                  + " == "
-                  + compareVersions(version, startVersion));
           if (compareVersions(version, startVersion) == 1) {
             if (compareVersions(version, endVersion) == -1) {
               preferredVersion = version;
@@ -218,7 +214,7 @@ public class DependencyResolver {
       Repository repository) {
     if (!dependencyNode.getNodeName().equals("dependency")
         && !dependencyNode.getNodeName().equals("parent")) {
-      System.err.println(
+      dependencyResolverCallback.error(
           "Expected a dependency or parent node, found a " + dependencyNode.getNodeName());
       return null;
     }
@@ -257,12 +253,12 @@ public class DependencyResolver {
     if (groupIDNode != null) {
       groupId = groupIDNode.getTextContent();
     } else {
-      System.err.println("No groupId found for dependency!");
+      dependencyResolverCallback.error("No groupId found for dependency!");
     }
     if (artifactIdNode != null) {
       artifactId = artifactIdNode.getTextContent();
     } else {
-      System.err.println("No artifactId found for dependency " + groupId);
+      dependencyResolverCallback.error("No artifactId found for dependency " + groupId);
     }
     // TODO: make an optional flag to allow test dependencies
     if (scopeNode != null) {
@@ -280,12 +276,11 @@ public class DependencyResolver {
         if (dependency.getValue().compare(parent, true)) {
           // we have this dependency loaded from a prent before!
           version = dependency.getValue().getVersion();
-          System.out.println("Got version from parent " + version);
           break;
         }
       }
       if (version.isEmpty()) {
-        System.err.println("No version found for dependency!");
+        dependencyResolverCallback.error("No version found for dependency!");
       }
     }
     if (typeNode != null) {
@@ -311,10 +306,15 @@ public class DependencyResolver {
    * @param dependency the dependency to resolve dependencies for
    * @param callback the callback to call when the resolving is complete
    * @param repositories custom repositories to search against
+   * @param dependencyResolverCallback the dependency resolver callback
    */
   private void resolveDependencies(
-      Dependency dependency, ResolveCallback callback, List<Repository> repositories) {
+      Dependency dependency,
+      ResolveCallback callback,
+      List<Repository> repositories,
+      DependencyResolverCallback dependencyResolverCallback) {
     this.callback = callback;
+    this.dependencyResolverCallback = dependencyResolverCallback;
     this.artifactFound = false;
     repoIndex = 0;
     allRepositories = repositories;
@@ -380,10 +380,11 @@ public class DependencyResolver {
     }
     // we failed to find the artifact in any repository
     if (!artifactFound) {
-      System.err.println("Didn't find artifact " + dependency + " in any repository!");
-      System.err.println("Searched in:");
+      dependencyResolverCallback.error(
+          "Didn't find artifact " + dependency + " in any repository!");
+      dependencyResolverCallback.error("Searched in:");
       for (Repository repo : allRepositories) {
-        System.err.println(repo + pomDownloadUrl);
+        dependencyResolverCallback.error(repo + pomDownloadUrl);
       }
       System.exit(0); // don't resolve any further dependencies
       // if we failed to resolve some dependencies
@@ -393,7 +394,7 @@ public class DependencyResolver {
         loadedDependencies.put(dependency, dependency);
       }
       // the artifact's POM was parsed successfully
-      System.out.println("Parsed " + mavenRepo + pomDownloadUrl);
+      dependencyResolverCallback.dependencyPomParsed(mavenRepo + pomDownloadUrl);
       // remove dependencies which has been loaded from the dependencies to load
       try {
         dependenciesToLoad.removeIf(
@@ -404,7 +405,7 @@ public class DependencyResolver {
       // load all dependencies for the loaded dependency
       for (Dependency dependency1 : dependencies) {
         dependenciesToLoad.add(dependency1);
-        resolveDependencies(dependency1, callback, allRepositories);
+        resolveDependencies(dependency1, callback, allRepositories, dependencyResolverCallback);
       }
     }
     // keep track of running threads by removing all dead threads
@@ -432,9 +433,23 @@ public class DependencyResolver {
     private ResolveCallback callback;
     // custom repositories to search against
     private List<String> repositoriesUrls = new ArrayList<>();
+    // the dependency resolver callback
+    private DependencyResolverCallback dependencyResolverCallback;
 
     public Builder setCallback(ResolveCallback callback) {
       this.callback = callback;
+      return this;
+    }
+
+    /**
+     * Specifies the dependency resolver callback
+     *
+     * @param dependencyResolverCallback the dependency resolver callback
+     * @return the Builder instance
+     */
+    public Builder setDependencyResolverCallback(
+        DependencyResolverCallback dependencyResolverCallback) {
+      this.dependencyResolverCallback = dependencyResolverCallback;
       return this;
     }
 
@@ -449,6 +464,9 @@ public class DependencyResolver {
     }
 
     public void resolve() {
+      if (dependencyResolverCallback == null) {
+        throw new IllegalArgumentException("Dependency Resolver Callback must be set.");
+      }
       List<Repository> repositories = new ArrayList<>(Repository.COMMON_MAVEN_REPOSITORIES);
       for (String repoUrl : repositoriesUrls) {
         if (!repoUrl.endsWith("/")) {
@@ -456,7 +474,8 @@ public class DependencyResolver {
         }
         repositories.add(new Repository(repoUrl));
       }
-      new DependencyResolver().resolveDependencies(dependency, callback, repositories);
+      new DependencyResolver()
+          .resolveDependencies(dependency, callback, repositories, dependencyResolverCallback);
     }
   }
 
@@ -499,15 +518,11 @@ public class DependencyResolver {
       try {
         URL url = new URL(repo + pomDownloadUrl);
         File cachesDir = Util.getCachesDirectory();
-        if (!cachesDir.exists() && !cachesDir.mkdir()) {
-          System.err.println("Failed to create caches directory.");
-          return;
-        }
         File artifactDirectory =
             new File(cachesDir, pomDownloadUrl.substring(0, pomDownloadUrl.lastIndexOf('/')));
         if (!artifactDirectory.exists()) {
           if (!artifactDirectory.mkdirs()) {
-            System.out.println("[WARNING] Failed to create some artifact directories");
+            dependencyResolverCallback.info("[WARNING] Failed to create some artifact directories");
           }
         }
         String fileName = pomDownloadUrl.split("/")[pomDownloadUrl.split("/").length - 1];
@@ -521,13 +536,13 @@ public class DependencyResolver {
           ReadableByteChannel rbc = Channels.newChannel(url.openStream());
           // if we reached here with no FileNotFoundException, so the POM file was found in this
           // repo
-          System.out.println("Downloading " + repo + pomDownloadUrl);
+          dependencyResolverCallback.dependencyPomDownloading(repo + pomDownloadUrl);
           FileOutputStream fos = new FileOutputStream(outputFile);
           fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-          System.out.println("Downloaded " + repo + pomDownloadUrl);
+          dependencyResolverCallback.dependencyPomDownloaded(repo + pomDownloadUrl);
         }
         doc = builder.parse(outputFile);
-        System.out.println("Parsing " + repo + pomDownloadUrl);
+        dependencyResolverCallback.dependencyPomParsing(repo + pomDownloadUrl);
         dependency.setRepository(mavenRepo);
         artifactFound = true;
         Element rootElement = doc.getDocumentElement();
@@ -552,7 +567,10 @@ public class DependencyResolver {
               if (resolvedDependency != null) {
                 parent = resolvedDependency;
                 resolveDependencies(
-                    resolvedDependency, DependencyResolver.this.callback, allRepositories);
+                    resolvedDependency,
+                    DependencyResolver.this.callback,
+                    allRepositories,
+                    dependencyResolverCallback);
               }
               break;
             case "dependencyManagement":

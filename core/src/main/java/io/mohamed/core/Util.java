@@ -80,10 +80,22 @@ public class Util {
   }
 
   public static File getMergedLibrariesDirectory() {
-    return new File(getCachesDirectory(), "merged");
+    File file = new File(getCachesDirectory(), "merged");
+    if (!file.exists()) {
+      if (!file.mkdir()) {
+        System.err.println("Failed to create merged directory..");
+      }
+    }
+    return file;
   }
 
   public static File getCachesDirectory() {
-    return new File(getLocalFilesDir(), "caches");
+    File file = new File(getLocalFilesDir(), "caches");
+    if (!file.exists()) {
+      if (!file.mkdir()) {
+        System.err.println("Failed to create caches directory..");
+      }
+    }
+    return file;
   }
 }

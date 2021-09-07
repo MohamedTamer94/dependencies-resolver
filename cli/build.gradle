@@ -15,5 +15,6 @@ repositories {
 dependencies {
     implementation 'commons-cli:commons-cli:1.4'
     implementation 'org.json:json:20210307'
+
     implementation project(':core')
 }
