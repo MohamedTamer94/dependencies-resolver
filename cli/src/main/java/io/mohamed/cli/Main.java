@@ -85,10 +85,10 @@ public class Main {
             .longOpt("filter-appinventor-dependencies")
             .desc("Don't include dependencies which app inventor includes by default.")
             .build();
-    Option compress =
-        Option.builder("c")
-            .longOpt("compress")
-            .desc("Compresses all jar classes into one JAR file ( or AAR, if any AAR file exists")
+    Option merge =
+        Option.builder("m")
+            .longOpt("merge")
+            .desc("Merges all jar classes into one JAR file ( or AAR, if any AAR file exists")
             .build();
     Option gradleDependency =
         Option.builder("d")
@@ -118,7 +118,7 @@ public class Main {
     options.addOption(aircraftType);
     options.addOption(verbose);
     options.addOption(output);
-    options.addOption(compress);
+    options.addOption(merge);
     options.addOption(filterAppInventorDependencies);
     options.addOption(gradleDependency);
     options.addOption(help);
@@ -415,7 +415,7 @@ public class Main {
               .setDependencies(dependencyList)
               .setRepositories(repositories)
               .setJarOnly(commandLine.hasOption("jarOnly"))
-              .setCompress(commandLine.hasOption("compress"))
+              .setMerge(commandLine.hasOption("merge"))
               .setDependencyResolverCallback(dependencyResolverCallback)
               .setFilterAppInventorDependencies(
                   commandLine.hasOption("filter-appinventor-dependencies"))

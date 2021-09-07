@@ -74,8 +74,8 @@ public class DependencyDownloader {
   private boolean done = false;
   // the callback which is called when downloading all files finishes
   private FilesDownloadedCallback callback;
-  // a flag to indicate weather to compress files into one JAR/AAR or not
-  private boolean compress;
+  // a flag to indicate weather to merge files into one JAR/AAR or not
+  private boolean merge;
   // the main dependency
   private Dependency mainDependency;
 
@@ -138,7 +138,7 @@ public class DependencyDownloader {
    * @param callback the callback to call when file download finishes
    * @param filterAppInventorDependencies a flag to filter appinventor dependencies from the
    *     downloaded dependencies
-   * @param compress a flag to compress all files into one JAR/AAR
+   * @param merge a flag to merge all files into one JAR/AAR
    * @param mainDependency the main dependency
    * @param verbose a flag to log debug messages
    * @param repositories list of custom repository urls
@@ -149,7 +149,7 @@ public class DependencyDownloader {
       List<Dependency> dependencies,
       FilesDownloadedCallback callback,
       boolean filterAppInventorDependencies,
-      boolean compress,
+      boolean merge,
       Dependency mainDependency,
       boolean verbose,
       List<String> repositories,
@@ -157,7 +157,7 @@ public class DependencyDownloader {
       DependencyResolverCallback dependencyResolverCallback) {
     allRepositories = new ArrayList<>();
     this.callback = callback;
-    this.compress = compress;
+    this.merge = merge;
     this.mainDependency = mainDependency;
     DependencyDownloader.dependencyResolverCallback = dependencyResolverCallback;
     DependencyDownloader.verbose = verbose;
@@ -216,7 +216,7 @@ public class DependencyDownloader {
     }
     if (dependenciesToLoad.isEmpty()) { // all dependencies has been downloaded
       done = true;
-      if (compress) {
+      if (merge) {
         dependencyResolverCallback.merging(MergeStage.START);
         boolean result = mergeLibraries();
         if (result) {
@@ -365,8 +365,8 @@ public class DependencyDownloader {
 
   /** Creates a DependencyDownloader instance */
   public static class Builder {
-    // weather to compress files into one JAR/AAR or not
-    private boolean compress = false;
+    // weather to merge files into one JAR/AAR or not
+    private boolean merge = false;
     // the main dependency
     private Dependency mainDependency = null;
     // the callback to invoke when the file download finishes
@@ -430,18 +430,18 @@ public class DependencyDownloader {
     }
 
     /**
-     * Weather to compress library files into one JAR/AAR file
+     * Weather to merge library files into one JAR/AAR file
      *
-     * @param compress true to compress library files
+     * @param merge true to merge library files
      * @return the Builder instance
      */
-    public Builder setCompress(boolean compress) {
-      this.compress = compress;
+    public Builder setMerge(boolean merge) {
+      this.merge = merge;
       return this;
     }
 
     /**
-     * Specifies the main dependency, this should only by used if compressing was enabled
+     * Specifies the main dependency, this should only by used if merging was enabled
      *
      * @param mainDependency the main dependency
      * @return the Builder instance
@@ -495,7 +495,7 @@ public class DependencyDownloader {
               dependencies,
               callback,
               filterAppInventorDependencies,
-              compress,
+              merge,
               mainDependency,
               verbose,
               repositories,
