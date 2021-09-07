@@ -386,8 +386,8 @@ public class DependencyResolver {
       for (Repository repo : allRepositories) {
         dependencyResolverCallback.error(repo + pomDownloadUrl);
       }
-      System.exit(0); // don't resolve any further dependencies
-      // if we failed to resolve some dependencies
+      done = true;
+      return;
     } else {
       dependency.setRepository(mavenRepo);
       if (!loadedDependencies.containsValue(dependency)) {
