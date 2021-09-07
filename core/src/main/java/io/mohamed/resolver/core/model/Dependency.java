@@ -25,6 +25,9 @@
 
 package io.mohamed.resolver.core.model;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * A class to represent a maven dependency a maven dependency is represented in POM XML files as:
  * <dependency> <groupId>com.example</groupId> <artifactId>test-project</artifactId>
@@ -33,6 +36,12 @@ package io.mohamed.resolver.core.model;
  * @author Mohamed Tamer
  */
 public class Dependency {
+  // gradle groovy implementation syntax
+  private static final Pattern GRADLE_GROOVY_IMPLEMENTATION =
+      Pattern.compile("(implementation) (['\"])(.*)(['\"])");
+  // gradle kotlin implementation syntax
+  private static final Pattern GRADLE_KOTLIN_IMPLEMENTATION =
+      Pattern.compile("(implementation\\()(['\"])(.*)(['\"]\\))");
   // the dependency group id
   private final String groupId;
   // the dependency artifact id
@@ -91,8 +100,15 @@ public class Dependency {
   }
 
   public static Dependency valueOf(String str) {
-    if (str.startsWith("implementation ")) {
-      String dependencyValue = str.substring("implementation ".length()).replaceAll("'", "").trim();
+    Matcher groovyMatcher = GRADLE_GROOVY_IMPLEMENTATION.matcher(str);
+    Matcher kotlinMatcher = GRADLE_KOTLIN_IMPLEMENTATION.matcher(str);
+    String dependencyValue = null;
+    if (groovyMatcher.matches()) {
+      dependencyValue = groovyMatcher.group(3).trim();
+    } else if (kotlinMatcher.matches()) {
+      dependencyValue = kotlinMatcher.group(3).trim();
+    }
+    if (dependencyValue != null) {
       String[] dependenceyPieces = dependencyValue.split(":");
       if (dependenceyPieces.length >= 2) {
         String artifactId = dependenceyPieces[0];
