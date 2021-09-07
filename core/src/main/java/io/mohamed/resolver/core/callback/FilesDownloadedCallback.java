@@ -22,22 +22,23 @@
  * SOFTWARE.
  */
 
-package io.mohamed.core.callback;
+package io.mohamed.resolver.core.callback;
 
-import io.mohamed.core.model.Dependency;
 import java.io.File;
+import java.util.List;
 
 /**
- * An interface which is used to listen when a file download has completed
+ * An interface which is used to get a callback when resolving downloading files for dependencies
+ * has completed
  *
  * @author Mohamed Tamer
  */
-public interface DownloadCallback {
+public interface FilesDownloadedCallback {
+
   /**
-   * Called when a file download completes
+   * Called when downloading files for the given dependencies has completed
    *
-   * @param downloadedFile the downloaded file, null if no file was found for the dependency
-   * @param dependency the dependency which the file was downloaded for
+   * @param fileList the list of the downloaded files
    */
-  void done(File downloadedFile, Dependency dependency);
+  void done(List<File> fileList);
 }

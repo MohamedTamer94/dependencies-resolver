@@ -1,6 +1,6 @@
-package io.mohamed.core;
+package io.mohamed.resolver.core;
 
-import io.mohamed.core.version.Version;
+import io.mohamed.resolver.core.version.Version;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;

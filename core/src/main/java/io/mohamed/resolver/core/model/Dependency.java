@@ -23,7 +23,7 @@
  * SOFTWARE.
  */
 
-package io.mohamed.core.model;
+package io.mohamed.resolver.core.model;
 
 /**
  * A class to represent a maven dependency a maven dependency is represented in POM XML files as:

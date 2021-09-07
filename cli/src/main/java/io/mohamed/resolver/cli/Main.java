@@ -23,16 +23,16 @@
  * SOFTWARE.
  */
 
-package io.mohamed.cli;
+package io.mohamed.resolver.cli;
 
-import io.mohamed.core.DependencyDownloader.Builder;
-import io.mohamed.core.DependencyResolver;
-import io.mohamed.core.Util;
-import io.mohamed.core.callback.DependencyResolverCallback;
-import io.mohamed.core.callback.FilesDownloadedCallback;
-import io.mohamed.core.callback.ResolveCallback;
-import io.mohamed.core.model.Dependency;
-import io.mohamed.core.model.Repository;
+import io.mohamed.resolver.core.DependencyDownloader.Builder;
+import io.mohamed.resolver.core.DependencyResolver;
+import io.mohamed.resolver.core.Util;
+import io.mohamed.resolver.core.callback.DependencyResolverCallback;
+import io.mohamed.resolver.core.callback.FilesDownloadedCallback;
+import io.mohamed.resolver.core.callback.ResolveCallback;
+import io.mohamed.resolver.core.model.Dependency;
+import io.mohamed.resolver.core.model.Repository;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;

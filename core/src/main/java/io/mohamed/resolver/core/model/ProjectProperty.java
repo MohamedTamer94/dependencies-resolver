@@ -23,7 +23,7 @@
  * SOFTWARE.
  */
 
-package io.mohamed.core.model;
+package io.mohamed.resolver.core.model;
 
 /**
  * A class representing a maven project's property. A property is typically is represented in POM

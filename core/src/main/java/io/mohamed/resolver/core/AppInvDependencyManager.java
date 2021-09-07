@@ -1,6 +1,6 @@
-package io.mohamed.core;
+package io.mohamed.resolver.core;
 
-import io.mohamed.core.model.Dependency;
+import io.mohamed.resolver.core.model.Dependency;
 import java.util.ArrayList;
 
 public class AppInvDependencyManager {

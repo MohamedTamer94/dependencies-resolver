@@ -1,4 +1,4 @@
-package io.mohamed.core;
+package io.mohamed.resolver.core;
 
 import com.android.ide.common.internal.AaptCruncher;
 import com.android.ide.common.internal.PngCruncher;
@@ -17,9 +17,9 @@ import com.android.manifmerger.XmlDocument;
 import com.android.utils.ILogger;
 import com.android.utils.StdLogger;
 import com.android.utils.StdLogger.Level;
-import io.mohamed.core.callback.DependencyResolverCallback;
-import io.mohamed.core.callback.DependencyResolverCallback.MergeStage;
-import io.mohamed.core.model.Dependency;
+import io.mohamed.resolver.core.callback.DependencyResolverCallback;
+import io.mohamed.resolver.core.callback.DependencyResolverCallback.MergeStage;
+import io.mohamed.resolver.core.model.Dependency;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;

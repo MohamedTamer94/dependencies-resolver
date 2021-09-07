@@ -23,16 +23,16 @@
  * SOFTWARE.
  */
 
-package io.mohamed.core;
+package io.mohamed.resolver.core;
 
 import com.android.ide.common.res2.MergingException;
 import com.android.manifmerger.ManifestMerger2.MergeFailureException;
-import io.mohamed.core.callback.DependencyResolverCallback;
-import io.mohamed.core.callback.DependencyResolverCallback.MergeStage;
-import io.mohamed.core.callback.DownloadCallback;
-import io.mohamed.core.callback.FilesDownloadedCallback;
-import io.mohamed.core.model.Dependency;
-import io.mohamed.core.model.Repository;
+import io.mohamed.resolver.core.callback.DependencyResolverCallback;
+import io.mohamed.resolver.core.callback.DependencyResolverCallback.MergeStage;
+import io.mohamed.resolver.core.callback.DownloadCallback;
+import io.mohamed.resolver.core.callback.FilesDownloadedCallback;
+import io.mohamed.resolver.core.model.Dependency;
+import io.mohamed.resolver.core.model.Repository;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;

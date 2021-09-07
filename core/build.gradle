@@ -3,7 +3,7 @@ plugins {
 }
 
 group 'io.mohamed.resolver'
-version '0.2-beta'
+version '0.3-alpha'
 description = 'The core module to resolve dependencies for the given artifact.'
 
 repositories {

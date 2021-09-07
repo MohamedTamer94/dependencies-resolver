@@ -1,4 +1,4 @@
-package io.mohamed.cli;
+package io.mohamed.resolver.cli;
 
 import org.apache.commons.cli.Options;
 

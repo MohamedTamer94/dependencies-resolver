@@ -1,4 +1,4 @@
-package io.mohamed.core.callback;
+package io.mohamed.resolver.core.callback;
 
 /**
  * An interface implemented by all the dependencies resolver project modules to listen for the

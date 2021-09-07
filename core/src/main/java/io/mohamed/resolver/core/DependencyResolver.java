@@ -23,13 +23,13 @@
  * SOFTWARE.
  */
 
-package io.mohamed.core;
+package io.mohamed.resolver.core;
 
-import io.mohamed.core.callback.DependencyResolverCallback;
-import io.mohamed.core.callback.ResolveCallback;
-import io.mohamed.core.model.Dependency;
-import io.mohamed.core.model.ProjectProperty;
-import io.mohamed.core.model.Repository;
+import io.mohamed.resolver.core.callback.DependencyResolverCallback;
+import io.mohamed.resolver.core.callback.ResolveCallback;
+import io.mohamed.resolver.core.model.Dependency;
+import io.mohamed.resolver.core.model.ProjectProperty;
+import io.mohamed.resolver.core.model.Repository;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;

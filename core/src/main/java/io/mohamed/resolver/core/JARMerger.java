@@ -1,4 +1,4 @@
-package io.mohamed.core;
+package io.mohamed.resolver.core;
 
 import java.io.File;
 import java.io.FileInputStream;
