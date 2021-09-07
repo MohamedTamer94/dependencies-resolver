@@ -64,7 +64,7 @@ import org.xml.sax.SAXException;
 public class DependencyResolver {
 
   // keeps track of all the loaded dependencies and the dependency that loaded it
-  private static final HashMap<Dependency, Dependency> loadedDependencies = new HashMap<>();
+  private static HashMap<Dependency, Dependency> loadedDependencies = new HashMap<>();
   // used for iterating asynchronously over the maven repositories
   int repoIndex = 0;
   // a flag to indicate that the artifact given by the user was resolved correctly
@@ -318,6 +318,7 @@ public class DependencyResolver {
     this.artifactFound = false;
     repoIndex = 0;
     allRepositories = repositories;
+    loadedDependencies = new HashMap<>();
     resolve(dependency);
   }
 
