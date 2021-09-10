@@ -2,16 +2,93 @@ plugins {
     id 'java'
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.0.9'
+    id 'org.beryx.jlink' version '2.24.1'
 }
 
 application {
-    //Note: Check package name. replace it with right one if it's wrong
-    mainClassName='home.Launcher'
+    mainClassName='io.mohamed.resolver.gui.Main'
 }
+
+def lin_java_home = hasProperty('org.gradle.java.home') ? getProperty('org.gradle.java.home') : System.getenv('JAVA_HOME')
+def lin_fx_jmods = hasProperty('linux.fx.mods') ? getProperty('linux.fx.mods') : System.getenv('PATH_TO_FX_MODS_LIN')
+
+def win_java_home = hasProperty('windows.java.home') ? getProperty('windows.java.home') : "C:\\Users\\Tamer\\Downloads\\jdk-14.0.2+12"
+def win_fx_jmods = hasProperty('windows.fx.mods') ? getProperty('windows.fx.mods') : 'C:\\Users\\Tamer\\Downloads\\jdk-14.0.2+12\\jmods'
+
+task jlinkWin(type: Exec) {
+    dependsOn 'clean'
+    dependsOn 'jar'
+
+    workingDir 'build'
+
+    if (win_java_home == null) {
+        throw new RuntimeException("java_home is not defined.")
+    }
+    if (win_fx_jmods == null) {
+        throw new RuntimeException("fx_jmods is not defined.")
+    }
+    commandLine "${win_java_home}/bin/jlink", '--module-path',
+            "${win_java_home}/jmods${File.pathSeparatorChar}libs${File.pathSeparatorChar}${win_fx_jmods}",
+            '--add-modules', "gui", '--output', "gui", '--strip-debug',
+            '--compress', '2', '--no-header-files', '--no-man-pages'
+}
+
+/*
+ *
+ *  * Copyright (c) 2021 Mohamed Tamer
+ *  *
+ *  * Permission is hereby granted, free of charge, to any person obtaining
+ *  * a copy of this software and associated documentation files (the
+ *  * "Software"), to deal in the Software without restriction, including
+ *  * without limitation the rights to use, copy, modify, merge, publish,
+ *  * distribute, sublicense, and/or sell copies of the Software, and to
+ *  * permit persons to whom the Software is furnished to do so, subject to
+ *  * the following conditions:
+ *  *
+ *  * The above copyright notice and this permission notice shall be
+ *  * included in all copies or substantial portions of the Software.
+ *  *
+ *  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *  * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ *  * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ *  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ *  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *  *
+ *
+ */
+
+/**
+task jlink(type: Exec) {
+    dependsOn 'clean'
+    dependsOn 'jar'
+
+    workingDir 'build'
+
+    if (lin_java_home == null) {
+        throw new RuntimeException("java_home is not defined.")
+    }
+    if (lin_fx_jmods == null) {
+        throw new RuntimeException("fx_jmods is not defined.")
+    }
+    commandLine "${lin_java_home}/bin/jlink", '--module-path', "libs${File.pathSeparatorChar}${lin_fx_jmods}",
+            '--add-modules', "${moduleName}", '--output', "${moduleName}", '--strip-debug',
+            '--compress', '2', '--no-header-files', '--no-man-pages'
+}*/
+
 
 javafx {
     version='11.0.2'
     modules=['javafx.controls', 'javafx.fxml']
+}
+
+jlink {
+    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
+    launcher{
+        name = 'hello'
+        jvmArgs = ['-Dlog4j.configurationFile=./log4j2.xml']
+    }
 }
 
 repositories {

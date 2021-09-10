@@ -134,7 +134,7 @@ public class DependenciesResolverApplication extends Application implements Init
           Alert alert =
               new Alert(
                   AlertType.NONE,
-                  "Dependencies Resolver - v0.3-beta \nA java library to resolve dependencies for a specific maven artifact.\nCreated and maintained by: Mohamed Tamer",
+                  Util.getVersion() + "\nA java library to resolve dependencies for a specific maven artifact.\nCreated and maintained by: Mohamed Tamer",
                   ButtonType.OK);
           alert.setTitle("Dependencies Resolver");
           alert.show();
