@@ -522,11 +522,6 @@ public class DependencyResolver {
     public void run() {
       try {
         URL url = new URL(repo + pomDownloadUrl);
-        /*if (pomDownloadUrl.isEmpty()) {
-          dependencyResolverCallback.error("Null Dependency Provided..");
-          callback.done(false, pomDownloadUrl, mavenRepo, dependencies, dependency);
-          return;
-        }*/
         File cachesDir = Util.getCachesDirectory();
         File artifactDirectory =
             new File(cachesDir, pomDownloadUrl.substring(0, pomDownloadUrl.lastIndexOf('/')));

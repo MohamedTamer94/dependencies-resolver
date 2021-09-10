@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.Group?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+<VBox xmlns:fx="http://javafx.com/fxml/1" maxHeight="50" xmlns="http://javafx.com/javafx/11.0.2"
+  fx:controller="io.mohamed.resolver.gui.DependenciesResolverApplication">
+  <GridPane alignment="center" hgap="10" vgap="10">
+    <VBox alignment="CENTER" prefHeight="200.0" prefWidth="500.0">
+      <Button text="Resolve" fx:id="resolveBtn">
+        <VBox.margin>
+          <Insets top="20"/>
+        </VBox.margin>
+      </Button>
+      <GridPane.margin>
+        <Insets top="20.0"/>
+      </GridPane.margin>
+      <Group>
+        <ScrollPane layoutY="79.0" prefHeight="121.0" prefWidth="383.0" fx:id="logs">
+        </ScrollPane>
+      </Group>
+      <HBox alignment="CENTER">
+        <TextField maxWidth="300" prefHeight="30" promptText="Group ID" fx:id="groupIdTbox">
+          <HBox.margin>
+            <Insets right="20.0"/>
+          </HBox.margin>
+        </TextField>
+        <TextField maxWidth="300" prefHeight="30" promptText="Artifact ID" fx:id="artifactIdTbox">
+          <HBox.margin>
+            <Insets right="20.0"/>
+          </HBox.margin>
+        </TextField>
+        <TextField maxWidth="300" prefHeight="30" promptText="Version" fx:id="versionTbox"/>
+      </HBox>
+      <HBox alignment="CENTER">
+        <Button text="Choose File.." fx:id="chooseFile"/>
+        <Label text="Output Directory:">
+          <HBox.margin>
+            <Insets/>
+          </HBox.margin>
+          <padding>
+            <Insets right="20.0"/>
+          </padding>
+        </Label>
+        <VBox.margin>
+          <Insets/>
+        </VBox.margin>
+        <padding>
+          <Insets bottom="20.0" top="20.0"/>
+        </padding>
+      </HBox>
+      <Label text="Dependencies Resolver">
+        <font>
+          <Font size="36.0"/>
+        </font>
+        <opaqueInsets>
+          <Insets left="200.0"/>
+        </opaqueInsets>
+      </Label>
+      <Label lineSpacing="2.0" text="Enter a gradle dependency:" textAlignment="CENTER">
+        <VBox.margin>
+          <Insets bottom="20.0"/>
+        </VBox.margin>
+        <font>
+          <Font size="14"/>
+        </font>
+      </Label>
+      <Label text="Or..">
+        <VBox.margin>
+          <Insets top="20.0"/>
+        </VBox.margin>
+        <font>
+          <Font size="17.0"/>
+        </font>
+      </Label>
+      <Label text="Enter Artifact information:">
+        <font>
+          <Font size="14"/>
+        </font>
+        <padding>
+          <Insets bottom="20.0"/>
+        </padding>
+      </Label>
+      <TextField maxWidth="300" prefHeight="30" promptText="Gradle Dependnecy"
+        fx:id="gradleDependencyTbx"/>
+    </VBox>
+    <columnConstraints>
+      <ColumnConstraints/>
+    </columnConstraints>
+    <rowConstraints>
+      <RowConstraints/>
+    </rowConstraints>
+  </GridPane>
+  <MenuBar fx:id="menu"/>
+</VBox>

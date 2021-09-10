@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="400.0" prefWidth="600.0"
+  xmlns="http://javafx.com/javafx/11.0.2"
+  fx:controller="io.mohamed.resolver.gui.OptionsDialogController">
+  <Button layoutX="54.0" layoutY="227.0" mnemonicParsing="false" text="Add Repository"
+    fx:id="addRepository"/>
+  <Button disable="true" layoutX="174.0" layoutY="227.0" mnemonicParsing="false"
+    text="Remove Repository" fx:id="removeRepository"/>
+  <HBox alignment="CENTER_LEFT" layoutX="52.0" layoutY="300.0" prefHeight="25.0"
+    prefWidth="524.0">
+    <CheckBox mnemonicParsing="false" text="Merge Libraries" fx:id="mergeLibrariesCheckbox"/>
+    <CheckBox layoutX="10.0" layoutY="14.0" mnemonicParsing="false" text="Jar Only"
+      fx:id="jarOnlyCheckbox">
+      <HBox.margin>
+        <Insets left="20.0"/>
+      </HBox.margin>
+    </CheckBox>
+    <CheckBox layoutX="134.0" layoutY="14.0" mnemonicParsing="false" text="Verbose"
+      fx:id="verboseCheckbox">
+      <HBox.margin>
+        <Insets left="20.0"/>
+      </HBox.margin>
+    </CheckBox>
+    <CheckBox layoutX="218.0" layoutY="14.0" mnemonicParsing="false"
+      text="Filter AppInventor Dependencies" fx:id="filterAppinventorDependenciesCheckbox">
+      <HBox.margin>
+        <Insets left="20.0"/>
+      </HBox.margin>
+    </CheckBox>
+  </HBox>
+  <Label layoutX="39.0" layoutY="22.0" text="Options">
+    <font>
+      <Font name="System Bold" size="21.0"/>
+    </font>
+  </Label>
+  <Label layoutX="54.0" layoutY="266.0" text="Resolve Options">
+    <font>
+      <Font size="18.0"/>
+    </font>
+  </Label>
+  <Label layoutX="54.0" layoutY="69.0" text="Global Dependencies">
+    <font>
+      <Font size="18.0"/>
+    </font>
+  </Label>
+  <VBox alignment="CENTER_LEFT" layoutX="54.0" layoutY="111.0" prefHeight="107.0"
+    prefWidth="305.0">
+    <ListView prefHeight="107.0" prefWidth="128.0" fx:id="repositoriesList"/>
+  </VBox>
+</AnchorPane>

@@ -2,18 +2,27 @@ package io.mohamed.resolver.gui;
 
 import io.mohamed.resolver.core.DependencyDownloader;
 import io.mohamed.resolver.core.DependencyResolver;
+import io.mohamed.resolver.core.Util;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback;
 import io.mohamed.resolver.core.callback.FilesDownloadedCallback;
 import io.mohamed.resolver.core.callback.ResolveCallback;
 import io.mohamed.resolver.core.model.Dependency;
+import io.mohamed.resolver.gui.settings.SettingsConstants;
+import io.mohamed.resolver.gui.settings.SettingsManager;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Optional;
+import java.util.ResourceBundle;
+import java.util.prefs.BackingStoreException;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXMLLoader;
+import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -21,9 +30,12 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
@@ -31,43 +43,92 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-public class DependenciesResolverApplication extends Application {
+public class DependenciesResolverApplication extends Application implements Initializable {
 
-  private Button chooseFile;
-  private TextField gradleDependencyTextBox;
-  private TextField artifactIDTextBox;
-  private TextField groupIDTextBox;
-  private TextField versionTextBox;
-  private ScrollPane logsPane;
+  public MenuBar menu;
+  public TextField gradleDependencyTbx;
+  public TextField groupIdTbox;
+  public TextField artifactIdTbox;
+  public TextField versionTbox;
+  public Button chooseFile;
+  public ScrollPane logs;
+  public Button resolveBtn;
   private Pane pane;
-  private CheckBox mergeLibraries;
+  private boolean mergeLibraries;
+  private ArrayList<String> repositories;
+  private boolean jarOnly;
+  private boolean filterAppinventorDependencies;
+  private boolean verbose;
+  private Pane logsPane;
+  private Stage primaryStage;
 
   public static void main(String[] args) {
     DependenciesResolverApplication.launch(args);
   }
 
   @Override
-  public void start(Stage primaryStage) throws IOException {
-    Parent root = FXMLLoader.load(getClass().getResource("/sample.fxml"));
-    primaryStage.setTitle("Dependencies Resolver");
-    Scene scene = new Scene(root, 520, 620);
-    primaryStage.setScene(scene);
-    primaryStage.show();
-    primaryStage.setMinWidth(520);
-    primaryStage.setMinHeight(620);
+  public void initialize(URL location, ResourceBundle resources) {
+    SettingsManager.load();
+    loadSettings();
+    SettingsManager.setOnSettingsChangeListener(this::loadSettings);
+    // set the logs scrollpane content
+    logsPane = new VBox();
+    logs.setContent(logsPane);
+    // add the top level menu bar
+    Menu homeMenu = new Menu("Home");
+    Menu toolsMenu = new Menu("Tools");
+    Menu helpMenu = new Menu("Help");
+    MenuItem aboutItem = new MenuItem("About");
+    aboutItem.setOnAction(
+        (event -> {
+          Alert alert =
+              new Alert(
+                  AlertType.NONE,
+                  "Dependencies Resolver - v0.3-beta \nA java library to resolve dependencies for a specific maven artifact.\nCreated and maintained by: Mohamed Tamer",
+                  ButtonType.OK);
+          alert.setTitle("Dependencies Resolver");
+          alert.show();
+        }));
+    helpMenu.getItems().add(aboutItem);
+    MenuItem optionsItem = new MenuItem("Options");
+    MenuItem exitItem = new MenuItem("Exit");
+    exitItem.setOnAction((event -> System.exit(0)));
+    MenuItem clearCacheItem = new MenuItem("Clear Cache");
+    clearCacheItem.setOnAction(
+        (event -> {
+          try {
+            Alert clearCacheAlert =
+                new Alert(
+                    AlertType.WARNING,
+                    "Clearing the Cache would result in deleting ALL cached libraries and reseting the settings to its default values.",
+                    ButtonType.YES,
+                    ButtonType.CANCEL);
+            clearCacheAlert.setTitle("Clear Cache");
+            clearCacheAlert.setHeaderText("Are you sure you want to delete the app's cache?");
+            Optional<ButtonType> result = clearCacheAlert.showAndWait();
+            if (result.isPresent() && result.get().equals(ButtonType.YES)) {
+              Util.clearCache();
+              SettingsManager.resetSettings();
+              appendLog("Clear Cache Successful..");
+            }
+          } catch (IOException | BackingStoreException e) {
+            e.printStackTrace();
+            appendLog("Failed to clear cache..", true);
+          }
+        }));
+    optionsItem.setOnAction(this::showOptionsDialog);
+    homeMenu.getItems().add(optionsItem);
+    homeMenu.getItems().add(new SeparatorMenuItem());
+    homeMenu.getItems().add(exitItem);
+    toolsMenu.getItems().add(clearCacheItem);
+    menu.getMenus().add(homeMenu);
+    menu.getMenus().add(toolsMenu);
+    menu.getMenus().add(helpMenu);
 
-    chooseFile = (Button) scene.lookup("#chooseFile");
-    Button resolveButton = (Button) scene.lookup("#resolveBtn");
-    gradleDependencyTextBox = (TextField) scene.lookup("#gradleDependencyTbx");
-    artifactIDTextBox = (TextField) scene.lookup("#artifactIdTbox");
-    groupIDTextBox = (TextField) scene.lookup("#groupIdTbox");
-    versionTextBox = (TextField) scene.lookup("#versionTbox");
-    mergeLibraries = (CheckBox) scene.lookup("#mergeLibraries");
-    logsPane = (ScrollPane) scene.lookup("#logs");
     pane = new VBox();
-    logsPane.setContent(pane);
     final File[] selectedFile = new File[1];
     chooseFile.setOnMouseClicked(
         (event) -> {
@@ -78,13 +139,13 @@ public class DependenciesResolverApplication extends Application {
             chooseFile.setText(selectedFile[0].getAbsolutePath());
           }
         });
-    resolveButton.setOnMouseClicked(
+    resolveBtn.setOnMouseClicked(
         (event -> {
           clearLogs();
-          String gradleDependency = gradleDependencyTextBox.getText();
-          String groupID = groupIDTextBox.getText();
-          String artifactId = artifactIDTextBox.getText();
-          String version = versionTextBox.getText();
+          String gradleDependency = gradleDependencyTbx.getText();
+          String groupID = groupIdTbox.getText();
+          String artifactId = artifactIdTbox.getText();
+          String version = versionTbox.getText();
           boolean gradleDependencyProvided = !gradleDependency.isEmpty();
           boolean artifactInfoProvided =
               !groupID.isEmpty() && !artifactId.isEmpty() && !version.isEmpty();
@@ -195,7 +256,9 @@ public class DependenciesResolverApplication extends Application {
 
                 @Override
                 public void verbose(String message) {
-                  appendLog(message);
+                  if (verbose) {
+                    appendLog(message);
+                  }
                 }
 
                 @Override
@@ -211,7 +274,6 @@ public class DependenciesResolverApplication extends Application {
           Dependency finalDependency = dependency;
           ResolveCallback callback =
               (artifactFound, pomUrl, mavenRepo, dependencyList, dependency1) -> {
-                logsPane.setVvalue(logsPane.getVmax());
                 if (artifactFound) {
                   appendLog("Successfully Resolved " + dependencyList.size() + " dependencies..");
                   FilesDownloadedCallback filesDownloadedCallback =
@@ -225,7 +287,7 @@ public class DependenciesResolverApplication extends Application {
                           }
                         }
                         // copy all downloaded files to the output directory
-                        System.out.println("Copying libraries to output directory..");
+                        appendLog("Copying libraries to output directory..");
                         for (File file : fileList) {
                           if (file == null) {
                             continue;
@@ -242,13 +304,14 @@ public class DependenciesResolverApplication extends Application {
                                 file.toPath(),
                                 destFile.toPath(),
                                 StandardCopyOption.REPLACE_EXISTING);
-                          } catch (IOException e) {
-                            e.printStackTrace();
+                          } catch (Exception e) {
+                            appendLog(e.toString(), true);
                           }
                         }
                         appendLog("Success!");
                         Platform.runLater(
                             () -> {
+                              logs.setVvalue(logs.getVmax());
                               Alert alert =
                                   new Alert(
                                       AlertType.INFORMATION,
@@ -265,22 +328,39 @@ public class DependenciesResolverApplication extends Application {
                       .setCallback(filesDownloadedCallback)
                       .setDependencyResolverCallback(dependencyResolverCallback)
                       .setDependencies(dependencyList)
-                      .setFilterAppInventorDependencies(false)
-                      .setJarOnly(false)
+                      .setFilterAppInventorDependencies(filterAppinventorDependencies)
+                      .setJarOnly(jarOnly)
                       .setMainDependency(finalDependency)
-                      .setMerge(mergeLibraries.isSelected())
-                      .setVerbose(true)
-                      .setRepositories(new ArrayList<>())
+                      .setMerge(mergeLibraries)
+                      .setVerbose(verbose)
+                      .setRepositories(repositories)
                       .resolve();
                 }
               };
           new DependencyResolver.Builder()
               .setDependency(dependency)
               .setCallback(callback)
-              .setRepositories(new ArrayList<>())
+              .setRepositories(repositories)
               .setDependencyResolverCallback(dependencyResolverCallback)
               .resolve();
         }));
+    Thread.setDefaultUncaughtExceptionHandler(
+        (t, e) -> {
+          e.printStackTrace();
+          appendLog(e.toString(), true);
+        });
+  }
+
+  @Override
+  public void start(Stage primaryStage) throws IOException {
+    this.primaryStage = primaryStage;
+    Parent root = FXMLLoader.load(getClass().getResource("/main.fxml"));
+    primaryStage.setTitle("Dependencies Resolver");
+    Scene scene = new Scene(root, 520, 590);
+    primaryStage.setScene(scene);
+    primaryStage.show();
+    primaryStage.setMinWidth(520);
+    primaryStage.setMinHeight(620);
   }
 
   private void clearLogs() {
@@ -289,21 +369,62 @@ public class DependenciesResolverApplication extends Application {
     }
   }
 
-  private void appendLog(String message) {
-    appendLog(message, false);
+  private void loadSettings() {
+    mergeLibraries =
+        Boolean.parseBoolean(
+            SettingsManager.getSettingForKey(SettingsConstants.MERGE_LIBRARIES_SETTINGS_KEY)
+                .getValue()
+                .toString());
+    jarOnly =
+        Boolean.parseBoolean(
+            SettingsManager.getSettingForKey(SettingsConstants.JAR_ONLY_SETTINGS_KEY)
+                .getValue()
+                .toString());
+    repositories =
+        (ArrayList<String>)
+            SettingsManager.getSettingForKey(SettingsConstants.REPOS_SETTING_KEY).getValue();
+    filterAppinventorDependencies =
+        Boolean.parseBoolean(
+            SettingsManager.getSettingForKey(
+                    SettingsConstants.FILTER_APPINVENTOR_DEPENDENCIES_SETTINGS_KEY)
+                .getValue()
+                .toString());
+    verbose =
+        Boolean.parseBoolean(
+            SettingsManager.getSettingForKey(SettingsConstants.VERBOSE_SETTINGS_KEY)
+                .getValue()
+                .toString());
   }
 
-  private void appendLog(String msg, boolean error) {
+  public void appendLog(String msg, boolean error) {
     Platform.runLater(
         () -> {
-          System.out.println(msg);
           Label log = new Label(msg);
           if (error) {
             log.setTextFill(Color.RED);
             log.setFont(Font.font(null, FontWeight.BOLD, 12));
           }
           log.setPadding(new Insets(5, 10, 5, 10));
-          pane.getChildren().add(log);
+          logsPane.getChildren().add(log);
         });
+  }
+
+  public void appendLog(String message) {
+    appendLog(message, false);
+  }
+
+  private void showOptionsDialog(ActionEvent actionEvent) {
+    FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/optionsDialog.fxml"));
+    try {
+      Parent parent = fxmlLoader.load();
+      Scene dialogScene = new Scene(parent, 600, 400);
+      Stage stage = new Stage();
+      stage.setTitle("Options");
+      stage.initModality(Modality.APPLICATION_MODAL);
+      stage.setScene(dialogScene);
+      stage.showAndWait();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 }
