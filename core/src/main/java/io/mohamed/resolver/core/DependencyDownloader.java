@@ -349,7 +349,7 @@ public class DependencyDownloader {
           dependencyResolverCallback.verbose("Extracting classes.jar from .aar file");
           Util.extractFile(outputFile.toPath(), "classes.jar", outputJarFile.toPath());
           dependencyResolverCallback.verbose("Extracted classes.jar from .aar file");
-          if (Util.hasDirectory(outputFile, "res/")) {
+          if (Util.hasResDirectory(outputFile)) {
             dependencyResolverCallback.info("[WARNING] The AAR " + outputFile.getName() + " contains resource files. These files will not be included in the final JAR."
                 + "");
           }

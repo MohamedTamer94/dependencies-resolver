@@ -20,13 +20,12 @@ import org.apache.commons.io.IOUtils;
 
 public class Util {
 
-  static boolean hasDirectory(File file, String directoryName) throws IOException {
+  static boolean hasResDirectory(File file) throws IOException {
     ZipFile zipFile = new ZipFile(file);
     Enumeration<? extends ZipEntry> entries = zipFile.entries();
     while (entries.hasMoreElements()) {
       ZipEntry entry = entries.nextElement();
-      System.out.println(directoryName);
-      if (entry.isDirectory() && entry.getName().equals(directoryName)) {
+      if (entry.isDirectory() && entry.getName().equals("res/")) {
         return true;
       }
     }
