@@ -47,7 +47,6 @@ import java.util.Optional;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -75,8 +74,6 @@ public class Main {
         Option.builder().longOpt("artifactId").desc("The artifactId ID.").hasArg().build();
     Option aircraftVersion =
         Option.builder().longOpt("version").desc("The aircraft version.").hasArg().build();
-    Option aircraftType =
-        Option.builder().longOpt("type").desc("The dependency version.").hasArg().build();
     Option verbose = Option.builder("v").longOpt("verbose").desc("Show debug messages.").build();
     Option output =
         Option.builder("o").longOpt("output").desc("The output directory.").hasArg().build();
@@ -115,7 +112,6 @@ public class Main {
     options.addOption(groupId);
     options.addOption(artifactId);
     options.addOption(aircraftVersion);
-    options.addOption(aircraftType);
     options.addOption(verbose);
     options.addOption(output);
     options.addOption(merge);
@@ -247,9 +243,8 @@ public class Main {
     }
     // if the repository is null, make it an empty list
     List<String> repositories =
-        Optional.ofNullable(commandLine.getOptionValues("repository"))
-            .map(Arrays::stream)
-            .orElseGet(Stream::empty)
+        Optional.ofNullable(commandLine.getOptionValues("repository")).stream()
+            .flatMap(Arrays::stream)
             .collect(Collectors.toList());
     String repositoriesFromPrefs = preferences.get("repos", "[]");
     JSONArray reposArray = new JSONArray(repositoriesFromPrefs);
@@ -269,8 +264,7 @@ public class Main {
           new Dependency(
               commandLine.getOptionValue("groupId"),
               commandLine.getOptionValue("artifactId"),
-              commandLine.getOptionValue("version"),
-              commandLine.getOptionValue("type"));
+              commandLine.getOptionValue("version"));
     } else {
       throw new IllegalArgumentException(
           "Neither a dependency argument nor a groupId, artifactId, version arguments were provided.");
