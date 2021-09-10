@@ -11,11 +11,27 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.ProviderNotFoundException;
 import java.nio.file.StandardCopyOption;
+import java.util.Enumeration;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
 public class Util {
+
+  static boolean hasDirectory(File file, String directoryName) throws IOException {
+    ZipFile zipFile = new ZipFile(file);
+    Enumeration<? extends ZipEntry> entries = zipFile.entries();
+    while (entries.hasMoreElements()) {
+      ZipEntry entry = entries.nextElement();
+      System.out.println(directoryName);
+      if (entry.isDirectory() && entry.getName().equals(directoryName)) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   static File getLocalFilesDir() {
     String workingDirectory;
