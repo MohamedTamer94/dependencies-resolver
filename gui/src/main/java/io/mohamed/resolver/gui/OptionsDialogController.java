@@ -1,3 +1,29 @@
+/*
+ *
+ *  * Copyright (c) 2021 Mohamed Tamer
+ *  *
+ *  * Permission is hereby granted, free of charge, to any person obtaining
+ *  * a copy of this software and associated documentation files (the
+ *  * "Software"), to deal in the Software without restriction, including
+ *  * without limitation the rights to use, copy, modify, merge, publish,
+ *  * distribute, sublicense, and/or sell copies of the Software, and to
+ *  * permit persons to whom the Software is furnished to do so, subject to
+ *  * the following conditions:
+ *  *
+ *  * The above copyright notice and this permission notice shall be
+ *  * included in all copies or substantial portions of the Software.
+ *  *
+ *  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *  * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ *  * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ *  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ *  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *  *
+ *
+ */
+
 package io.mohamed.resolver.gui;
 
 import io.mohamed.resolver.gui.settings.Setting;
@@ -16,19 +42,35 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.cell.TextFieldListCell;
 
+/**
+ * The controller for the settings dialog
+ *
+ * @author Mohamed Tamer
+ */
 public class OptionsDialogController implements Initializable {
 
+  // the listview for the user-defined custom repository urls
   public ListView<String> repositoriesList;
+  // the add repository button
   public Button addRepository;
+  // the remove repository button
   public Button removeRepository;
+  // the merge libraries checkbox
   public CheckBox mergeLibrariesCheckbox;
   public CheckBox verboseCheckbox;
+  // the verbose checkbox
   public CheckBox jarOnlyCheckbox;
+  // the filter appinventor dependencies checkbox
   public CheckBox filterAppinventorDependenciesCheckbox;
+  // the defined repository urls
   private ArrayList<String> repositories;
+  // the merge libraries value
   private boolean mergeLibraries;
+  // the jarOnly value
   private boolean jarOnly;
+  // the verbose value
   private boolean verbose;
+  // the filter appinventor dependencies value
   private boolean filterAppinventorDependencies;
 
   @Override

@@ -1,3 +1,29 @@
+/*
+ *
+ *  * Copyright (c) 2021 Mohamed Tamer
+ *  *
+ *  * Permission is hereby granted, free of charge, to any person obtaining
+ *  * a copy of this software and associated documentation files (the
+ *  * "Software"), to deal in the Software without restriction, including
+ *  * without limitation the rights to use, copy, modify, merge, publish,
+ *  * distribute, sublicense, and/or sell copies of the Software, and to
+ *  * permit persons to whom the Software is furnished to do so, subject to
+ *  * the following conditions:
+ *  *
+ *  * The above copyright notice and this permission notice shall be
+ *  * included in all copies or substantial portions of the Software.
+ *  *
+ *  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *  * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ *  * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ *  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ *  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *  *
+ *
+ */
+
 package io.mohamed.resolver.gui;
 
 import io.mohamed.resolver.core.DependencyDownloader;
@@ -46,23 +72,42 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+/**
+ * The application which manages the interface and settings for the dependencies resolver GUI
+ *
+ * @author Mohamed Tamer
+ */
 public class DependenciesResolverApplication extends Application implements Initializable {
 
+  // the top-level menu bar control
   public MenuBar menu;
+  // the gradle dependency text field
   public TextField gradleDependencyTbx;
+  // the group ID text field
   public TextField groupIdTbox;
+  // the artifact id text field
   public TextField artifactIdTbox;
+  // the version text field
   public TextField versionTbox;
+  // the choose file button
   public Button chooseFile;
+  // the logs scrollPane
   public ScrollPane logs;
+  // the resolve Button
   public Button resolveBtn;
-  private Pane pane;
+  // merge libraries setting value
   private boolean mergeLibraries;
+  // the user-defined custom repositories setting value
   private ArrayList<String> repositories;
+  // the jarOnly setting value
   private boolean jarOnly;
+  // the filter appinventor dependencies setting value
   private boolean filterAppinventorDependencies;
+  // the verbose setting value
   private boolean verbose;
+  // the logs pane
   private Pane logsPane;
+  // the primary stage for the application
   private Stage primaryStage;
 
   public static void main(String[] args) {
@@ -71,10 +116,12 @@ public class DependenciesResolverApplication extends Application implements Init
 
   @Override
   public void initialize(URL location, ResourceBundle resources) {
+    // load settings
     SettingsManager.load();
     loadSettings();
+    // listen for settings changes
     SettingsManager.setOnSettingsChangeListener(this::loadSettings);
-    // set the logs scrollpane content
+    // set the logs scrollPane content
     logsPane = new VBox();
     logs.setContent(logsPane);
     // add the top level menu bar
@@ -103,7 +150,7 @@ public class DependenciesResolverApplication extends Application implements Init
             Alert clearCacheAlert =
                 new Alert(
                     AlertType.WARNING,
-                    "Clearing the Cache would result in deleting ALL cached libraries and reseting the settings to its default values.",
+                    "Clearing the Cache would result in deleting ALL cached libraries and resetting the settings to its default values.",
                     ButtonType.YES,
                     ButtonType.CANCEL);
             clearCacheAlert.setTitle("Clear Cache");
@@ -128,7 +175,7 @@ public class DependenciesResolverApplication extends Application implements Init
     menu.getMenus().add(toolsMenu);
     menu.getMenus().add(helpMenu);
 
-    pane = new VBox();
+    // the choose file button
     final File[] selectedFile = new File[1];
     chooseFile.setOnMouseClicked(
         (event) -> {
@@ -141,7 +188,9 @@ public class DependenciesResolverApplication extends Application implements Init
         });
     resolveBtn.setOnMouseClicked(
         (event -> {
+          // clear previous logs
           clearLogs();
+          // make sure the user has input a dependency
           String gradleDependency = gradleDependencyTbx.getText();
           String groupID = groupIdTbox.getText();
           String artifactId = artifactIdTbox.getText();
@@ -160,6 +209,7 @@ public class DependenciesResolverApplication extends Application implements Init
             noDependencyProvidedAlert.show();
             return;
           }
+          // make sure the user has selected an output directory
           if (selectedFile[0] == null) {
             Alert noDependencyProvidedAlert =
                 new Alert(AlertType.NONE, "No Output file was provided", ButtonType.OK);
@@ -168,6 +218,7 @@ public class DependenciesResolverApplication extends Application implements Init
             noDependencyProvidedAlert.show();
             return;
           }
+          // parse the user defined dependnecy
           Dependency dependency;
           if (artifactInfoProvided) {
             dependency = new Dependency(groupID, artifactId, version);
@@ -183,6 +234,7 @@ public class DependenciesResolverApplication extends Application implements Init
               return;
             }
           }
+          // start fetching and downloading dependencies
           appendLog("Fetching Dependencies..");
           DependencyResolverCallback dependencyResolverCallback =
               new DependencyResolverCallback() {
@@ -344,6 +396,7 @@ public class DependenciesResolverApplication extends Application implements Init
               .setDependencyResolverCallback(dependencyResolverCallback)
               .resolve();
         }));
+    // print any uncaught exceptions to the user
     Thread.setDefaultUncaughtExceptionHandler(
         (t, e) -> {
           e.printStackTrace();
@@ -363,12 +416,14 @@ public class DependenciesResolverApplication extends Application implements Init
     primaryStage.setMinHeight(620);
   }
 
+  /** Clears any logs printed in the logs pane */
   private void clearLogs() {
-    if (!pane.getChildren().isEmpty()) {
-      pane.getChildren().removeAll(pane.getChildren());
+    if (!logsPane.getChildren().isEmpty()) {
+      logsPane.getChildren().removeAll(logsPane.getChildren());
     }
   }
 
+  /** Loads settings defined by the user */
   private void loadSettings() {
     mergeLibraries =
         Boolean.parseBoolean(
@@ -396,6 +451,12 @@ public class DependenciesResolverApplication extends Application implements Init
                 .toString());
   }
 
+  /**
+   * Appends a log message to the logs pane
+   *
+   * @param msg the log message
+   * @param error style the message as an error or not
+   */
   public void appendLog(String msg, boolean error) {
     Platform.runLater(
         () -> {
@@ -409,10 +470,20 @@ public class DependenciesResolverApplication extends Application implements Init
         });
   }
 
+  /**
+   * Logs an info message
+   *
+   * @param message the message
+   */
   public void appendLog(String message) {
     appendLog(message, false);
   }
 
+  /**
+   * Displays the settings dialog
+   *
+   * @param actionEvent the menu click event
+   */
   private void showOptionsDialog(ActionEvent actionEvent) {
     FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/optionsDialog.fxml"));
     try {
