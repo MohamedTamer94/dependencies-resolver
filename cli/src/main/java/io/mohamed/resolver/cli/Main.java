@@ -37,6 +37,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -141,6 +143,7 @@ public class Main {
   }
 
   public static void main(String[] args) throws ParseException {
+    Instant start = Instant.now();
     Command currentCommand = null;
     for (String arg : args) {
       for (Command command : SUPPORTED_COMMANDS) {
@@ -267,7 +270,8 @@ public class Main {
       throw new IllegalArgumentException(
           "Neither a dependency argument nor a groupId, artifactId, version arguments were provided.");
     } else {
-      System.out.println("Welcome to Dependencies Resolver CLI! Please use the --help option to find out more about it.");
+      System.out.println(
+          "Welcome to Dependencies Resolver CLI! Please use the --help option to find out more about it.");
       return;
     }
     if (!commandLine.hasOption("output")) {
@@ -402,6 +406,11 @@ public class Main {
                   }
                 }
                 System.out.println("Success!");
+                Instant end = Instant.now();
+                System.out.println(
+                    "Execution completed in "
+                        + Duration.between(start, end).toSeconds()
+                        + " seconds..");
                 System.exit(0);
               };
           new Builder()
