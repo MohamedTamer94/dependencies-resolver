@@ -263,9 +263,12 @@ public class Main {
               commandLine.getOptionValue("groupId"),
               commandLine.getOptionValue("artifactId"),
               commandLine.getOptionValue("version"));
-    } else {
+    } else if (currentCommand != null && currentCommand.getName().equals("resolve")) {
       throw new IllegalArgumentException(
           "Neither a dependency argument nor a groupId, artifactId, version arguments were provided.");
+    } else {
+      System.out.println("Welcome to Dependencies Resolver CLI! Please use the --help option to find out more about it.");
+      return;
     }
     if (!commandLine.hasOption("output")) {
       throw new IllegalArgumentException("The required option --output wasn't provided.");
