@@ -101,6 +101,8 @@ public class DependenciesResolverApplication extends Application implements Init
   private boolean filterAppinventorDependencies;
   // the verbose setting value
   private boolean verbose;
+  // the jetify libraries setting value
+  private boolean jetifyLibraries;
   // the logs pane
   private Pane logsPane;
   // the primary stage for the application
@@ -381,6 +383,7 @@ public class DependenciesResolverApplication extends Application implements Init
                       .setMainDependency(finalDependency)
                       .setMerge(mergeLibraries)
                       .setVerbose(verbose)
+                      .setJetifyLibraries(jetifyLibraries)
                       .setRepositories(repositories)
                       .resolve();
                 }
@@ -443,6 +446,11 @@ public class DependenciesResolverApplication extends Application implements Init
     verbose =
         Boolean.parseBoolean(
             SettingsManager.getSettingForKey(SettingsConstants.VERBOSE_SETTINGS_KEY)
+                .getValue()
+                .toString());
+    jetifyLibraries =
+        Boolean.parseBoolean(
+            SettingsManager.getSettingForKey(SettingsConstants.JETIFY_SETTINGS_KEY)
                 .getValue()
                 .toString());
   }

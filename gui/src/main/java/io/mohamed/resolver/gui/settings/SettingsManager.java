@@ -43,7 +43,8 @@ public class SettingsManager {
               new Setting(SettingsConstants.VERBOSE_SETTINGS_KEY, SettingType.STRING),
               new Setting(
                   SettingsConstants.FILTER_APPINVENTOR_DEPENDENCIES_SETTINGS_KEY,
-                  SettingType.STRING)));
+                  SettingType.STRING),
+              new Setting(SettingsConstants.JETIFY_SETTINGS_KEY, SettingType.STRING)));
   private static final ArrayList<Setting> loadedSettings = new ArrayList<>();
   private static final Preferences preferences = Preferences.userRoot();
   private static OnSettingsChangeListener listener;

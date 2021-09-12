@@ -60,6 +60,8 @@ public class DependencyDownloader {
   private static boolean verbose;
   // the dependency resolver callback
   private static DependencyResolverCallback dependencyResolverCallback;
+  // invoke jetifier on downloaded libraries
+  private static boolean jetifyLibraries;
   // the list of the downloaded files
   List<File> downloadedFiles = new ArrayList<>();
   // the dependencies which should be downloaded
@@ -142,6 +144,7 @@ public class DependencyDownloader {
    * @param repositories list of custom repository urls
    * @param jarOnly includes jar files only
    * @param dependencyResolverCallback the dependency resolver callback
+   * @param jetifyLibraries convert android.support.* references to androidx.*
    */
   private void resolveDependenciesFiles(
       List<Dependency> dependencies,
@@ -152,11 +155,13 @@ public class DependencyDownloader {
       boolean verbose,
       List<String> repositories,
       boolean jarOnly,
-      DependencyResolverCallback dependencyResolverCallback) {
+      DependencyResolverCallback dependencyResolverCallback,
+      boolean jetifyLibraries) {
     allRepositories = new ArrayList<>();
     this.callback = callback;
     this.merge = merge;
     this.mainDependency = mainDependency;
+    DependencyDownloader.jetifyLibraries = jetifyLibraries;
     DependencyDownloader.dependencyResolverCallback = dependencyResolverCallback;
     DependencyDownloader.verbose = verbose;
     DependencyDownloader.jarOnly = jarOnly;
@@ -221,6 +226,14 @@ public class DependencyDownloader {
           dependencyResolverCallback.mergeSuccess();
         } else {
           dependencyResolverCallback.mergeFailed();
+        }
+      }
+      if (jetifyLibraries) {
+        try {
+          downloadedFiles =
+              new LibraryJetifier().jetify(downloadedFiles, dependencyResolverCallback);
+        } catch (IOException | InterruptedException e) {
+          e.printStackTrace();
         }
       }
       if (callback != null) {
@@ -348,8 +361,11 @@ public class DependencyDownloader {
           Util.extractFile(outputFile.toPath(), "classes.jar", outputJarFile.toPath());
           dependencyResolverCallback.verbose("Extracted classes.jar from .aar file");
           if (Util.hasResDirectory(outputFile)) {
-            dependencyResolverCallback.info("[WARNING] The AAR " + outputFile.getName() + " contains resource files. These files will not be included in the final JAR."
-                + "");
+            dependencyResolverCallback.info(
+                "[WARNING] The AAR "
+                    + outputFile.getName()
+                    + " contains resource files. These files will not be included in the final JAR."
+                    + "");
           }
         }
         if (fileDownloadUrl != null) {
@@ -385,6 +401,8 @@ public class DependencyDownloader {
     private boolean jarOnly = false;
     // the dependency resolver callback
     private DependencyResolverCallback dependencyResolverCallback;
+    // jetify downloaded libraries
+    private boolean jetifyLibraries;
 
     /**
      * Specifies weather to log debug messages
@@ -406,6 +424,17 @@ public class DependencyDownloader {
     public Builder setDependencyResolverCallback(
         DependencyResolverCallback dependencyResolverCallback) {
       this.dependencyResolverCallback = dependencyResolverCallback;
+      return this;
+    }
+
+    /**
+     * Converts references for android.support.* in the downloaded libraries to androidx.*
+     *
+     * @param jetifyLibraries true to jetify libraries
+     * @return the builder instance
+     */
+    public Builder setJetifyLibraries(boolean jetifyLibraries) {
+      this.jetifyLibraries = jetifyLibraries;
       return this;
     }
 
@@ -502,7 +531,8 @@ public class DependencyDownloader {
               verbose,
               repositories,
               jarOnly,
-              dependencyResolverCallback);
+              dependencyResolverCallback,
+              jetifyLibraries);
     }
   }
 }

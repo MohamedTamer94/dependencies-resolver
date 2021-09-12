@@ -33,6 +33,7 @@ repositories {
     flatDir {
         dirs '../libs'
     }
+    maven { url 'https://repo.gradle.org/gradle/libs-releases-local/' }
 }
 
 dependencies {
@@ -46,6 +47,7 @@ dependencies {
     implementation name: 'sdk-common-24.3.0'
     implementation name: 'manifest-merger-25.3.0'
     implementation name: 'layoutlib-api-24.3.0'
+    implementation gradleApi()
 }
 
 task generateSources {

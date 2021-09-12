@@ -108,9 +108,16 @@ public class Main {
                 "If used, only jar files would be resolved, only classes.jar would be extracted from aars. Useful for extension developers.")
             .longOpt("jarOnly")
             .build();
+    Option jetifiy =
+        Option.builder()
+            .longOpt("jetify")
+            .desc(
+                "Converts android.support.* references to androidx.*, this should be used with libraries that wasn't yet upgraded to AndroidX")
+            .build();
     Options options = new Options();
     options.addOption(groupId);
     options.addOption(artifactId);
+    options.addOption(jetifiy);
     options.addOption(aircraftVersion);
     options.addOption(verbose);
     options.addOption(output);
@@ -424,6 +431,7 @@ public class Main {
               .setFilterAppInventorDependencies(
                   commandLine.hasOption("filter-appinventor-dependencies"))
               .setVerbose(commandLine.hasOption("verbose"))
+              .setJetifyLibraries(commandLine.hasOption("jetify"))
               .resolve();
         };
     new DependencyResolver.Builder()
