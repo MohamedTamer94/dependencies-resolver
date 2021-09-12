@@ -353,6 +353,7 @@ public class DependencyResolver {
                 if (repoIndex >= (allRepositories.size() - 1)) {
                   this.artifactFound = false;
                   this.pomDownloadUrl = pomUrl;
+                  this.mavenRepo = mavenRepo;
                   this.dependencies = dependencies;
                   finishResolve(dependency1);
                 } else {
