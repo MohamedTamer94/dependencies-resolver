@@ -52,6 +52,7 @@ import org.jsoup.select.Elements;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 /**
@@ -283,7 +284,7 @@ public class DependencyResolver {
         }
       }
       if (version.isEmpty()) {
-        dependencyResolverCallback.error("No version found for dependency!");
+        return null;
       }
     }
     if (typeNode != null) {
@@ -549,54 +550,48 @@ public class DependencyResolver {
         dependency.setRepository(mavenRepo);
         artifactFound = true;
         Element rootElement = doc.getDocumentElement();
-        // iterate over the project elements to find parent, dependencies, dependencyManagement,
-        // and properties XML nodes
-        for (int i = 0; i < rootElement.getChildNodes().getLength(); i++) {
-          Node node = rootElement.getChildNodes().item(i);
-          switch (node.getNodeName()) {
-            case "packaging":
-              dependency.setType(node.getTextContent());
-            case "properties":
-              for (int x = 0; x < node.getChildNodes().getLength(); x++) {
-                Node propertyNode = node.getChildNodes().item(x);
-                ProjectProperty projectProperty =
-                    new ProjectProperty(propertyNode.getNodeName(), propertyNode.getTextContent());
-                properties.add(projectProperty);
-              }
-              break;
-            case "parent":
-              // we must load the parent first to get the defined versions ( if any ) !
-              Dependency resolvedDependency = getDependency(node, properties, parent, repo);
-              if (resolvedDependency != null) {
-                parent = resolvedDependency;
-                resolveDependencies(
-                    resolvedDependency,
-                    DependencyResolver.this.callback,
-                    allRepositories,
-                    dependencyResolverCallback);
-              }
-              break;
-            case "dependencyManagement":
-              for (int x = 0; x < node.getChildNodes().getLength(); x++) {
-                Node dependenciesNode = node.getChildNodes().item(x);
-                if (dependenciesNode.getNodeName().equals("dependencies")) {
-                  for (int y = 0; y < node.getChildNodes().getLength(); y++) {
-                    Node dependencyNode = node.getChildNodes().item(y);
-                    if (dependencyNode.getNodeName().equals("dependency")) {
-                      Dependency resolvedDependency1 =
-                          getDependency(dependencyNode, properties, parent, repo);
-                      if (resolvedDependency1 != null) {
-                        dependencies.add(resolvedDependency1);
-                        loadedDependencies.put(dependency, resolvedDependency1);
-                      }
-                    }
-                  }
-                }
-              }
-              break;
-            case "dependencies":
-              for (int x = 0; x < node.getChildNodes().getLength(); x++) {
-                Node dependencyNode = node.getChildNodes().item(x);
+        // parse packaging elements to infer artifact type
+        NodeList packagingElements = rootElement.getElementsByTagName("packaging");
+        for (int i = 0; i < packagingElements.getLength(); i++) {
+          Node node = packagingElements.item(i);
+          dependency.setType(node.getTextContent());
+        }
+        // parse properties elements to find out defined properties
+        NodeList propertiesElements = rootElement.getElementsByTagName("properties");
+        for (int i = 0; i < propertiesElements.getLength(); i++) {
+          Node propertiesNode = propertiesElements.item(i);
+          for (int x = 0; x < propertiesNode.getChildNodes().getLength(); x++) {
+            Node propertyNode = propertiesNode.getChildNodes().item(x);
+            ProjectProperty projectProperty =
+                new ProjectProperty(propertyNode.getNodeName(), propertyNode.getTextContent());
+            properties.add(projectProperty);
+          }
+        }
+        // parse parent elements to find out the parent for the artifact
+        // we must load the parent first to get the defined versions ( if any ) !
+        NodeList parentNodes = rootElement.getElementsByTagName("parent");
+        for (int i = 0; i < parentNodes.getLength(); i++) {
+          Node parentNode = parentNodes.item(i);
+          Dependency resolvedDependency = getDependency(parentNode, properties, parent, repo);
+          if (resolvedDependency != null) {
+            parent = resolvedDependency;
+            resolveDependencies(
+                resolvedDependency,
+                DependencyResolver.this.callback,
+                allRepositories,
+                dependencyResolverCallback);
+          }
+        }
+        // parse dependencies definitions in the dependencyManagement elements
+        NodeList dependencyManagementsNodes =
+            rootElement.getElementsByTagName("dependencyManagement");
+        for (int i = 0; i < dependencyManagementsNodes.getLength(); i++) {
+          Node dependencyManagementNode = dependencyManagementsNodes.item(i);
+          for (int x = 0; x < dependencyManagementNode.getChildNodes().getLength(); x++) {
+            Node dependenciesNode = dependencyManagementNode.getChildNodes().item(x);
+            if (dependenciesNode.getNodeName().equals("dependencies")) {
+              for (int y = 0; y < dependencyManagementNode.getChildNodes().getLength(); y++) {
+                Node dependencyNode = dependencyManagementNode.getChildNodes().item(y);
                 if (dependencyNode.getNodeName().equals("dependency")) {
                   Dependency resolvedDependency1 =
                       getDependency(dependencyNode, properties, parent, repo);
@@ -606,10 +601,33 @@ public class DependencyResolver {
                   }
                 }
               }
-              break;
+            }
           }
         }
-      } catch (IOException | ParserConfigurationException | SAXException ignored) {
+        NodeList dependenciesNodes = rootElement.getElementsByTagName("dependencies");
+        for (int i = 0; i < dependenciesNodes.getLength(); i++) {
+          Node dependenciesNode = dependenciesNodes.item(i);
+          for (int x = 0; x < dependenciesNode.getChildNodes().getLength(); x++) {
+            Node dependencyNode = dependenciesNode.getChildNodes().item(x);
+            if (dependencyNode.getNodeName().equals("dependency")) {
+              Dependency resolvedDependency1 =
+                  getDependency(dependencyNode, properties, parent, repo);
+              if (resolvedDependency1 != null) {
+                dependencies.add(resolvedDependency1);
+                loadedDependencies.put(dependency, resolvedDependency1);
+              }
+            }
+          }
+        }
+      } catch (IOException | ParserConfigurationException e) {
+      } catch (SAXException e) {
+        dependencyResolverCallback.info("[WARNING] Skipping Invalid file " + repo + pomDownloadUrl);
+        try {
+          // we report the artifact was found here, yet with null dependency, so we indicate we want to skip this dependency.
+          callback.done(true, pomDownloadUrl, repo, dependencies, dependency);
+        } catch (IOException ioException) {
+          ioException.printStackTrace();
+        }
       }
       try {
         callback.done(artifactFound, pomDownloadUrl, repo, dependencies, dependency);
