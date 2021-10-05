@@ -25,6 +25,8 @@ package io.mohamed.resolver.cli;
 
 import io.mohamed.resolver.core.DependencyDownloader.Builder;
 import io.mohamed.resolver.core.DependencyResolver;
+import io.mohamed.resolver.core.GradleDependencyResolver;
+import io.mohamed.resolver.core.GradleDependencyResolver.Callback;
 import io.mohamed.resolver.core.Util;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback;
 import io.mohamed.resolver.core.callback.FilesDownloadedCallback;
@@ -33,6 +35,7 @@ import io.mohamed.resolver.core.model.Dependency;
 import io.mohamed.resolver.core.model.Repository;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
@@ -73,7 +76,12 @@ public class Main {
     Option artifactId =
         Option.builder().longOpt("artifactId").desc("The artifactId ID.").hasArg().build();
     Option aircraftVersion =
-        Option.builder().longOpt("version").desc("Optionally specifies the aircraft version. If not used the repository latest version would be used.").hasArg().build();
+        Option.builder()
+            .longOpt("version")
+            .desc(
+                "Optionally specifies the aircraft version. If not used the repository latest version would be used.")
+            .hasArg()
+            .build();
     Option verbose = Option.builder("v").longOpt("verbose").desc("Show debug messages.").build();
     Option output =
         Option.builder("o").longOpt("output").desc("The output directory.").hasArg().build();
@@ -114,6 +122,13 @@ public class Main {
             .desc(
                 "Converts android.support.* references to androidx.*, this should be used with libraries that wasn't yet upgraded to AndroidX")
             .build();
+    Option gradle =
+        Option.builder("g")
+            .longOpt("gradle")
+            .hasArg()
+            .desc(
+                "Uses the gradle build system to resolve dependencies for the sepecified grdle file / gradle project directory. This is very useful in case an error occurs at some point while resolving dependencies using the built-in dependency resolving system.")
+            .build();
     Options options = new Options();
     options.addOption(groupId);
     options.addOption(artifactId);
@@ -127,6 +142,7 @@ public class Main {
     options.addOption(help);
     options.addOption(repository);
     options.addOption(jarOnly);
+    options.addOption(gradle);
     SUPPORTED_COMMANDS.add(new Command("resolve", options));
     Option versionOption =
         Option.builder("v")
@@ -149,7 +165,7 @@ public class Main {
     SUPPORTED_COMMANDS.add(new Command("remove-repository", addRemoveRepositoryOptions));
   }
 
-  public static void main(String[] args) throws ParseException {
+  public static void main(String[] args) throws ParseException, FileNotFoundException {
     Instant start = Instant.now();
     Command currentCommand = null;
     for (String arg : args) {
@@ -260,18 +276,19 @@ public class Main {
         reposArray.toList().stream()
             .map(object -> Objects.toString(object, ""))
             .collect(Collectors.toList()));
-    System.out.println("Fetching Dependencies..");
-    // resolves and locates the dependencies by parsing their POM files
     Dependency mainDependency;
+    boolean useGradle = false;
     if (commandLine.hasOption("dependency")) {
       mainDependency = Dependency.valueOf(commandLine.getOptionValue("dependency"));
-    } else if (commandLine.hasOption("groupId")
-        && commandLine.hasOption("artifactId")) {
+    } else if (commandLine.hasOption("groupId") && commandLine.hasOption("artifactId")) {
       mainDependency =
           new Dependency(
               commandLine.getOptionValue("groupId"),
               commandLine.getOptionValue("artifactId"),
               commandLine.getOptionValue("version"));
+    } else if (commandLine.hasOption("gradle")) {
+      mainDependency = null;
+      useGradle = true;
     } else if (currentCommand != null && currentCommand.getName().equals("resolve")) {
       throw new IllegalArgumentException(
           "Neither a dependency argument nor a groupId, artifactId, version arguments were provided.");
@@ -282,6 +299,14 @@ public class Main {
     }
     if (!commandLine.hasOption("output")) {
       throw new IllegalArgumentException("The required option --output wasn't provided.");
+    }
+    System.out.println("Fetching Dependencies..");
+    File dependenciesDir = new File(commandLine.getOptionValue("output"));
+    if (!dependenciesDir.exists()) {
+      if (!dependenciesDir.mkdir()) {
+        System.err.println("Failed to create dependencies directory.");
+        return;
+      }
     }
     // For the CLI, all logs are printed to the stdout
     DependencyResolverCallback dependencyResolverCallback =
@@ -371,73 +396,95 @@ public class Main {
             System.out.println(message);
           }
         };
-    ResolveCallback resolveCallback =
-        (artifactFound, pomUrl, mavenRepo, dependencyList, dependency) -> {
-          if (dependencyList.isEmpty()) {
-            System.err.println("Didn't find any dependencies!");
-          } else {
-            System.out.println("Successfully Resolved " + dependencyList.size() + " dependencies!");
-          }
-          System.out.println("Downloading Dependencies..");
-          // downloads the JAR/AAR files for the resolved dependencies
-          FilesDownloadedCallback callback =
-              fileList -> {
-                System.out.println("Successfully downloaded " + fileList.size() + " files.");
-                File dependenciesDir = new File(commandLine.getOptionValue("output"));
-                if (!dependenciesDir.exists()) {
-                  if (!dependenciesDir.mkdir()) {
-                    System.err.println("Failed to create dependencies directory.");
-                    return;
-                  }
-                }
-                // copy all downloaded files to the output directory
-                System.out.println("Copying libraries to output directory..");
-                for (File file : fileList) {
-                  if (file == null) {
-                    continue;
-                  }
-                  if (commandLine.hasOption("verbose")) {
-                    System.out.println(
-                        "Copying library: "
-                            + file.getAbsolutePath()
-                            + " to output directory "
-                            + dependenciesDir.getAbsolutePath());
-                  }
-                  File destFile = new File(dependenciesDir.getAbsolutePath(), file.getName());
-                  try {
-                    Files.copy(
-                        file.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                  } catch (IOException e) {
-                    e.printStackTrace();
-                  }
-                }
-                System.out.println("Success!");
-                Instant end = Instant.now();
-                System.out.println(
-                    "Execution completed in "
-                        + Duration.between(start, end).toSeconds()
-                        + " seconds..");
-                System.exit(0);
-              };
-          new Builder()
-              .setMainDependency(mainDependency)
-              .setCallback(callback)
-              .setDependencies(dependencyList)
-              .setRepositories(repositories)
-              .setJarOnly(commandLine.hasOption("jarOnly"))
-              .setMerge(commandLine.hasOption("merge"))
-              .setDependencyResolverCallback(dependencyResolverCallback)
-              .setFilterAppInventorDependencies(
-                  commandLine.hasOption("filter-appinventor-dependencies"))
-              .setVerbose(commandLine.hasOption("verbose"))
-              .setJetifyLibraries(commandLine.hasOption("jetify"))
-              .resolve();
-        };
-    new DependencyResolver.Builder()
-        .setDependency(mainDependency)
-        .setDependencyResolverCallback(dependencyResolverCallback)
-        .setCallback(resolveCallback)
-        .setRepositories(repositories)
-        .resolve();
+    if (!useGradle) {
+      // resolves and locates the dependencies by parsing their POM files
+      ResolveCallback resolveCallback =
+          (artifactFound, pomUrl, mavenRepo, dependencyList, dependency) -> {
+            if (dependencyList.isEmpty()) {
+              System.err.println("Didn't find any dependencies!");
+            } else {
+              System.out.println(
+                  "Successfully Resolved " + dependencyList.size() + " dependencies!");
+            }
+            System.out.println("Downloading Dependencies..");
+            // downloads the JAR/AAR files for the resolved dependencies
+            FilesDownloadedCallback callback =
+                fileList -> {
+                  System.out.println("Successfully downloaded " + fileList.size() + " files.");
+                  // copy all downloaded files to the output directory
+                  System.out.println("Copying libraries to output directory..");
+                  copyLibraries(fileList, dependenciesDir, commandLine.hasOption("verbose"));
+                  System.out.println("Success!");
+                  Instant end = Instant.now();
+                  System.out.println(
+                      "Execution completed in "
+                          + Duration.between(start, end).toSeconds()
+                          + " seconds..");
+                  System.exit(0);
+                };
+            new Builder()
+                .setMainDependency(mainDependency)
+                .setCallback(callback)
+                .setDependencies(dependencyList)
+                .setRepositories(repositories)
+                .setJarOnly(commandLine.hasOption("jarOnly"))
+                .setMerge(commandLine.hasOption("merge"))
+                .setDependencyResolverCallback(dependencyResolverCallback)
+                .setFilterAppInventorDependencies(
+                    commandLine.hasOption("filter-appinventor-dependencies"))
+                .setVerbose(commandLine.hasOption("verbose"))
+                .setJetifyLibraries(commandLine.hasOption("jetify"))
+                .resolve();
+          };
+      new DependencyResolver.Builder()
+          .setDependency(mainDependency)
+          .setDependencyResolverCallback(dependencyResolverCallback)
+          .setCallback(resolveCallback)
+          .setRepositories(repositories)
+          .resolve();
+    } else {
+      File gradleBuildFile = new File(commandLine.getOptionValue("gradle"));
+      if (!gradleBuildFile.exists()) {
+        throw new FileNotFoundException("The gradle build file specified doesn't exist.");
+      }
+      Callback callback = fileList -> {
+        System.out.println("Copying libraries to output directory..");
+        copyLibraries(fileList, dependenciesDir, commandLine.hasOption("verbose"));
+        System.out.println("Done!");
+        Instant end = Instant.now();
+        System.out.println(
+            "Execution completed in "
+                + Duration.between(start, end).toSeconds()
+                + " seconds..");
+        System.exit(0);
+      };
+      new GradleDependencyResolver.Builder()
+          .setGradleFile(gradleBuildFile)
+          .setCallback(callback)
+          .setDependencyResolverCallback(dependencyResolverCallback)
+          .resolve();
+    }
+  }
+
+  public static void copyLibraries(List<File> fileList, File dependenciesDir, boolean verbose) {
+    for (File file : fileList) {
+      if (file == null) {
+        continue;
+      }
+      if (verbose) {
+        System.out.println(
+            "Copying library: "
+                + file.getAbsolutePath()
+                + " to output directory "
+                + dependenciesDir.getAbsolutePath());
+      }
+      File destFile = new File(dependenciesDir.getAbsolutePath(), file.getName());
+      try {
+        Files.copy(
+            file.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
   }
 }
