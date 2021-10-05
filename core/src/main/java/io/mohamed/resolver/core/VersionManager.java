@@ -39,9 +39,25 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+/**
+ * Retrieves version information for dependencies
+ *
+ * @author Mohamed Tamer
+ */
 public class VersionManager {
+  // the fetcher instance used to download maven metadata files from the web
   public static final Fetcher fetcher = Fetcher.getInstance();
 
+  /**
+   * Retrieves the version information for the dependency
+   *
+   * @param dependency the dependency to resolve version information for
+   * @param repository the repository for the dependency
+   * @param callback the callback to print logging information to
+   * @return the version information for the dependency
+   * @throws ParserConfigurationException if an error occurs while parsing the metadata XML
+   * @throws SAXException if an error occurs while parsing the metadata XML
+   */
   public static DependencyVersion getVersions(
       Dependency dependency, Repository repository, DependencyResolverCallback callback)
       throws ParserConfigurationException, SAXException {
@@ -61,13 +77,21 @@ public class VersionManager {
       }
       return new DependencyVersion(versions, latestVersion);
     } catch (FileNotFoundException e) {
-      callback.info("Invalid Dependency: The dependency doesn't include a maven-metadata.xml file.");
+      callback.info(
+          "Invalid Dependency: The dependency doesn't include a maven-metadata.xml file.");
       return null;
     } catch (IOException e) {
       return null;
     }
   }
 
+  /**
+   * Downloads the maven-metadata.xml file for the dependency
+   * @param dependency the dependency
+   * @param repository the repository for the dependency
+   * @return the downloaded maven metadata file
+   * @throws IOException if an error is thrown while downloading the files
+   */
   public static File downloadMavenMetaData(Dependency dependency, Repository repository)
       throws IOException {
     URL mavenMetaDataUrl =

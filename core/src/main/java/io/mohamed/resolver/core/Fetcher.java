@@ -29,13 +29,23 @@ import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 
+/** A class to fetch data from the web */
 public class Fetcher {
+  // the fetcher instance which is globally used by the dependencies resolver classes
   private static final Fetcher fetcher = new Fetcher();
 
+  /** @return the global fetcher instance */
   public static Fetcher getInstance() {
     return fetcher;
   }
 
+  /**
+   * Downloads a file from the web
+   *
+   * @param url the url to the file
+   * @param outFile the local file to download the online file to
+   * @throws IOException if an error is thrown while downloading
+   */
   public void downloadFile(URL url, File outFile) throws IOException {
     ReadableByteChannel rbc = Channels.newChannel(url.openStream());
     FileOutputStream fos = new FileOutputStream(outFile);

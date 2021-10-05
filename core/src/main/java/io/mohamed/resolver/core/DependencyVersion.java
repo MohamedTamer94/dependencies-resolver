@@ -24,20 +24,35 @@ package io.mohamed.resolver.core;
 
 import java.util.List;
 
+/**
+ * A class that represents the dependency version information
+ *
+ * @author Mohamed Tamer
+ */
 public class DependencyVersion {
 
+  // the repository latest version name
   private final String latestVersion;
+  // the repository version names
   private final List<String> versionNames;
 
+  /**
+   * Creates a new DependencyVersion class
+   *
+   * @param versionNames a list of the dependency versions
+   * @param latestVersion the dependency latest version
+   */
   public DependencyVersion(List<String> versionNames, String latestVersion) {
     this.versionNames = versionNames;
     this.latestVersion = latestVersion;
   }
 
+  /** @return the dependency version names */
   public List<String> getVersionNames() {
     return versionNames;
   }
 
+  /** @return the dependency latest version name */
   public String getLatestVersion() {
     return latestVersion;
   }

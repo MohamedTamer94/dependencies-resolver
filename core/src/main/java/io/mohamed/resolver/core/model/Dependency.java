@@ -101,6 +101,17 @@ public class Dependency {
     }
   }
 
+  /**
+   * Creates a Dependency class given the string representation. Supported string representations
+   * for artifacts are: <br>
+   * Gradle Groovy Implementations. e.g: <code>implementation 'com.test:test:1.0'`</code> <br>
+   * Gradle Kotlin Implementation. e.g: <code>implementation("com.test:test:1.0")</code> <br>
+   * Long Gradle Implementation. e.g: <code>implementation group: com.test, name: test, version: 1.0
+   * </code>
+   *
+   * @param str the string representation for the dependency
+   * @return the dependency created from the string representation
+   */
   public static Dependency valueOf(String str) {
     Matcher groovyMatcher = GRADLE_GROOVY_IMPLEMENTATION.matcher(str);
     Matcher kotlinMatcher = GRADLE_KOTLIN_IMPLEMENTATION.matcher(str);
@@ -158,6 +169,7 @@ public class Dependency {
 
   /**
    * Changes the dependency version
+   *
    * @param version the new version
    */
   public void setVersion(String version) {

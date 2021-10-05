@@ -61,6 +61,8 @@ public class DependencyResolver {
 
   // keeps track of all the loaded dependencies and the dependency that loaded it
   private static HashMap<Dependency, Dependency> loadedDependencies = new HashMap<>();
+  // the fetcher instance which is used to download files from the web
+  private final Fetcher fetcher = Fetcher.getInstance();
   // used for iterating asynchronously over the maven repositories
   int repoIndex = 0;
   // a flag to indicate that the artifact given by the user was resolved correctly
@@ -81,8 +83,9 @@ public class DependencyResolver {
   private boolean done = false;
   // the list of repositories to search against
   private List<Repository> allRepositories;
+  // the callback for the dependency resolver, used to send logging information so various modules
+  // could interrupt it in the correct way for the user
   private DependencyResolverCallback dependencyResolverCallback;
-  private final Fetcher fetcher = Fetcher.getInstance();
 
   /**
    * Creates a new DependencyResolver
@@ -521,7 +524,8 @@ public class DependencyResolver {
     public void run() {
       try {
         if (dependency.getVersion() == null || dependency.getVersion().isEmpty()) {
-          DependencyVersion version = VersionManager.getVersions(dependency, repo, dependencyResolverCallback);
+          DependencyVersion version =
+              VersionManager.getVersions(dependency, repo, dependencyResolverCallback);
           if (version != null) {
             dependency.setVersion(version.getLatestVersion());
           }
