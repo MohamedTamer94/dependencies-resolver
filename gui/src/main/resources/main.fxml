@@ -22,105 +22,101 @@
   ~   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   -->
 
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.control.MenuBar?>
-<?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.Group?>
-<?import javafx.scene.layout.ColumnConstraints?>
-<?import javafx.scene.layout.GridPane?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.RowConstraints?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
-<VBox maxHeight="50" xmlns="http://javafx.com/javafx/11.0.2" xmlns:fx="http://javafx.com/fxml/1"
-  fx:controller="io.mohamed.resolver.gui.DependenciesResolverApplication">
-  <MenuBar fx:id="menu"/>
+<?import javafx.geometry.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox maxHeight="50" xmlns="http://javafx.com/javafx/11.0.2" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.mohamed.resolver.gui.DependenciesResolverApplication">
+  <MenuBar fx:id="menu" />
   <GridPane alignment="center" hgap="10" vgap="10">
     <columnConstraints>
-      <ColumnConstraints/>
+      <ColumnConstraints />
     </columnConstraints>
     <rowConstraints>
-      <RowConstraints/>
+      <RowConstraints />
     </rowConstraints>
     <VBox alignment="CENTER" prefHeight="200.0" prefWidth="500.0">
       <Label text="Dependencies Resolver">
         <font>
-          <Font size="36.0"/>
+          <Font size="36.0" />
         </font>
         <opaqueInsets>
-          <Insets left="200.0"/>
+          <Insets left="200.0" />
         </opaqueInsets>
       </Label>
       <Label lineSpacing="2.0" text="Enter a gradle dependency:" textAlignment="CENTER">
         <VBox.margin>
-          <Insets bottom="20.0"/>
+          <Insets bottom="20.0" />
         </VBox.margin>
         <font>
-          <Font size="14"/>
+          <Font size="14" />
         </font>
       </Label>
-      <TextField fx:id="gradleDependencyTbx" maxWidth="300" prefHeight="30"
-        promptText="Gradle Dependnecy"/>
+      <TextField fx:id="gradleDependencyTbx" maxWidth="300" prefHeight="30" promptText="Gradle Dependnecy" />
       <Label text="Or..">
         <font>
-          <Font size="17.0"/>
+          <Font size="17.0" />
         </font>
         <VBox.margin>
-          <Insets top="20.0"/>
+          <Insets top="20.0" />
         </VBox.margin>
       </Label>
       <Label text="Enter Artifact information:">
         <padding>
-          <Insets bottom="20.0"/>
+          <Insets bottom="20.0" />
         </padding>
         <font>
-          <Font size="14"/>
+          <Font size="14" />
         </font>
       </Label>
       <HBox alignment="CENTER">
         <TextField fx:id="groupIdTbox" maxWidth="300" prefHeight="30" promptText="Group ID">
           <HBox.margin>
-            <Insets right="20.0"/>
+            <Insets right="20.0" />
           </HBox.margin>
         </TextField>
         <TextField fx:id="artifactIdTbox" maxWidth="300" prefHeight="30" promptText="Artifact ID">
           <HBox.margin>
-            <Insets right="20.0"/>
+            <Insets right="20.0" />
           </HBox.margin>
         </TextField>
-        <TextField fx:id="versionTbox" maxWidth="300" prefHeight="30" promptText="Version"/>
+        <TextField fx:id="versionTbox" maxWidth="300" prefHeight="30" promptText="Version (optional)" />
       </HBox>
       <HBox alignment="CENTER">
         <Label text="Output Directory:">
           <padding>
-            <Insets right="20.0"/>
+            <Insets right="20.0" />
           </padding>
           <HBox.margin>
-            <Insets/>
+            <Insets />
           </HBox.margin>
         </Label>
-        <Button fx:id="chooseFile" text="Choose File.."/>
+        <Button fx:id="chooseFile" text="Choose File.." />
         <padding>
-          <Insets bottom="20.0" top="20.0"/>
+          <Insets bottom="20.0" top="20.0" />
         </padding>
         <VBox.margin>
-          <Insets/>
+          <Insets />
         </VBox.margin>
       </HBox>
       <Group>
         <ScrollPane fx:id="logs" layoutY="79.0" prefHeight="121.0" prefWidth="383.0">
         </ScrollPane>
       </Group>
+         <Button fx:id="copyLogsBtn" mnemonicParsing="false" text="Copy Logs">
+            <VBox.margin>
+               <Insets top="20.0" />
+            </VBox.margin>
+         </Button>
       <Button fx:id="resolveBtn" text="Resolve">
         <VBox.margin>
-          <Insets top="20"/>
+          <Insets top="20" />
         </VBox.margin>
       </Button>
       <GridPane.margin>
-        <Insets top="20.0"/>
+        <Insets top="20.0" />
       </GridPane.margin>
     </VBox>
   </GridPane>

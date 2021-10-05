@@ -42,10 +42,13 @@ import java.util.ResourceBundle;
 import java.util.prefs.BackingStoreException;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -58,12 +61,17 @@ import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SeparatorMenuItem;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -91,6 +99,8 @@ public class DependenciesResolverApplication extends Application implements Init
   public ScrollPane logs;
   // the resolve Button
   public Button resolveBtn;
+  // the copy logs button
+  public Button copyLogsBtn;
   // merge libraries setting value
   private boolean mergeLibraries;
   // the user-defined custom repositories setting value
@@ -107,6 +117,8 @@ public class DependenciesResolverApplication extends Application implements Init
   private Pane logsPane;
   // the primary stage for the application
   private Stage primaryStage;
+  // the logs as a string
+  private String logsStr = "";
 
   public static void main(String[] args) {
     DependenciesResolverApplication.launch(args);
@@ -184,6 +196,12 @@ public class DependenciesResolverApplication extends Application implements Init
             chooseFile.setText(selectedFile[0].getAbsolutePath());
           }
         });
+    copyLogsBtn.setOnMouseClicked((event) -> {
+      final Clipboard clipboard = Clipboard.getSystemClipboard();
+      final ClipboardContent content = new ClipboardContent();
+      content.putString(logsStr);
+      clipboard.setContent(content);
+    });
     resolveBtn.setOnMouseClicked(
         (event -> {
           // clear previous logs
@@ -195,15 +213,15 @@ public class DependenciesResolverApplication extends Application implements Init
           String version = versionTbox.getText();
           boolean gradleDependencyProvided = !gradleDependency.isEmpty();
           boolean artifactInfoProvided =
-              !groupID.isEmpty() && !artifactId.isEmpty() && !version.isEmpty();
+              !groupID.isEmpty() && !artifactId.isEmpty();
           if (!gradleDependencyProvided && !artifactInfoProvided) {
             Alert noDependencyProvidedAlert =
                 new Alert(
                     AlertType.NONE,
-                    "Neither a gradle dependency, nor artifactId, groupId, and version were provided!",
+                    "The dependency's group ID or artifact ID is missing.",
                     ButtonType.OK);
-            noDependencyProvidedAlert.setTitle("No Dependency Provided");
-            noDependencyProvidedAlert.setHeaderText("No Dependency Provided");
+            noDependencyProvidedAlert.setTitle("Missing Artifact Information");
+            noDependencyProvidedAlert.setHeaderText("Missing Artifact Information");
             noDependencyProvidedAlert.show();
             return;
           }
@@ -465,9 +483,9 @@ public class DependenciesResolverApplication extends Application implements Init
   public void appendLog(String msg, boolean error) {
     Platform.runLater(
         () -> {
-          TextField log = new TextField(msg);
-          log.setEditable(false);
-          log.getStyleClass().add("copyable-label");
+          Label log = new Label();
+          log.setText(msg);
+          logsStr += msg + "\n";
           if (error) {
             log.setStyle("-fx-text-fill: red;");
             log.setFont(Font.font(null, FontWeight.BOLD, 12));
