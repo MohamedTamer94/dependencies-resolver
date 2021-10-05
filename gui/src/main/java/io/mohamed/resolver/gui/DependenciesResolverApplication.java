@@ -69,6 +69,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
@@ -427,7 +428,6 @@ public class DependenciesResolverApplication extends Application implements Init
     Parent root = FXMLLoader.load(getClass().getResource("/main.fxml"));
     primaryStage.setTitle("Dependencies Resolver");
     Scene scene = new Scene(root, 520, 590);
-    scene.getStylesheets().add(getClass().getResource("/copyable-text.css").toExternalForm());
     primaryStage.setScene(scene);
     primaryStage.show();
     primaryStage.setMinWidth(520);
@@ -487,7 +487,7 @@ public class DependenciesResolverApplication extends Application implements Init
           log.setText(msg);
           logsStr += msg + "\n";
           if (error) {
-            log.setStyle("-fx-text-fill: red;");
+            log.setTextFill(Color.RED);
             log.setFont(Font.font(null, FontWeight.BOLD, 12));
           }
           log.setPadding(new Insets(5, 10, 5, 10));
