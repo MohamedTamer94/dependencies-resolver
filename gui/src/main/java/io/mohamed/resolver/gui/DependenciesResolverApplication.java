@@ -409,6 +409,7 @@ public class DependenciesResolverApplication extends Application implements Init
     Parent root = FXMLLoader.load(getClass().getResource("/main.fxml"));
     primaryStage.setTitle("Dependencies Resolver");
     Scene scene = new Scene(root, 520, 590);
+    scene.getStylesheets().add(getClass().getResource("/copyable-text.css").toExternalForm());
     primaryStage.setScene(scene);
     primaryStage.show();
     primaryStage.setMinWidth(520);
@@ -464,9 +465,11 @@ public class DependenciesResolverApplication extends Application implements Init
   public void appendLog(String msg, boolean error) {
     Platform.runLater(
         () -> {
-          Label log = new Label(msg);
+          TextField log = new TextField(msg);
+          log.setEditable(false);
+          log.getStyleClass().add("copyable-label");
           if (error) {
-            log.setTextFill(Color.RED);
+            log.setStyle("-fx-text-fill: red;");
             log.setFont(Font.font(null, FontWeight.BOLD, 12));
           }
           log.setPadding(new Insets(5, 10, 5, 10));
