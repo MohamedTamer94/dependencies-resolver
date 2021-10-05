@@ -73,7 +73,7 @@ public class Main {
     Option artifactId =
         Option.builder().longOpt("artifactId").desc("The artifactId ID.").hasArg().build();
     Option aircraftVersion =
-        Option.builder().longOpt("version").desc("The aircraft version.").hasArg().build();
+        Option.builder().longOpt("version").desc("Optionally specifies the aircraft version. If not used the repository latest version would be used.").hasArg().build();
     Option verbose = Option.builder("v").longOpt("verbose").desc("Show debug messages.").build();
     Option output =
         Option.builder("o").longOpt("output").desc("The output directory.").hasArg().build();
@@ -185,7 +185,7 @@ public class Main {
               currentCommand == null ? GENERAL_OPTIONS : currentCommand.getOptions());
       return;
     }
-    if (commandLine.hasOption("version")) {
+    if (currentCommand == null && commandLine.hasOption("v")) {
       System.out.println(Util.getVersion());
       return;
     }
@@ -266,8 +266,7 @@ public class Main {
     if (commandLine.hasOption("dependency")) {
       mainDependency = Dependency.valueOf(commandLine.getOptionValue("dependency"));
     } else if (commandLine.hasOption("groupId")
-        && commandLine.hasOption("artifactId")
-        && commandLine.hasOption("version")) {
+        && commandLine.hasOption("artifactId")) {
       mainDependency =
           new Dependency(
               commandLine.getOptionValue("groupId"),

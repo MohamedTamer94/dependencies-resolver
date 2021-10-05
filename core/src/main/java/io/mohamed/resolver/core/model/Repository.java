@@ -36,11 +36,10 @@ public class Repository {
   // the bintray maven repository
   public static final Repository BINTRAY_REPOSITORY =
       new Repository("https://jcenter.bintray.com/");
-  // the jboss maven repository
-  public static final Repository JBOSS_REPOSITORY =
-      new Repository("https://repository.jboss.org/nexus/content/repositories/releases/");
   // the clojars maven repository
   public static final Repository CLOJARS_REPOSITORY = new Repository("https://repo.clojars.org/");
+  // the atlassian maven repository
+  public static final Repository ATLASSIAN_REPOSITORY = new Repository("https://packages.atlassian.com/mvn/maven-atlassian-external/");
   // a collection of common public maven repositories
   // TODO: allow users to add custom maven repositories to it
   public static final List<Repository> COMMON_MAVEN_REPOSITORIES =
@@ -51,7 +50,7 @@ public class Repository {
               Repository.BINTRAY_REPOSITORY,
               Repository.BINTRAY_REPOSITORY,
               Repository.CLOJARS_REPOSITORY,
-              Repository.JBOSS_REPOSITORY));
+              ATLASSIAN_REPOSITORY));
   String url;
 
   public Repository(String url) {

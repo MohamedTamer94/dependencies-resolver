@@ -49,7 +49,7 @@ public class Dependency {
   // the dependency artifact id
   private final String artifactId;
   // the dependency version
-  private final String version;
+  private String version;
   // the dependency type, defaults to jar
   private String type = "jar";
   // the dependency scope, defaults to compile
@@ -154,6 +154,14 @@ public class Dependency {
   /** @return the dependency version */
   public String getVersion() {
     return version;
+  }
+
+  /**
+   * Changes the dependency version
+   * @param version the new version
+   */
+  public void setVersion(String version) {
+    this.version = version;
   }
 
   @Override

@@ -80,6 +80,9 @@ public class Util {
   }
 
   public static void copyResource(String resource, File outputFile) throws IOException {
+    if (outputFile.exists()) {
+      return;
+    }
     URL aaptToolResource = DependencyDownloader.class.getResource(resource);
     if (aaptToolResource != null) {
       try (FileOutputStream fos = new FileOutputStream(outputFile)) {
@@ -121,6 +124,16 @@ public class Util {
     if (!file.exists()) {
       if (!file.mkdir()) {
         System.err.println("Failed to create merged directory..");
+      }
+    }
+    return file;
+  }
+
+  public static File getGradleDirectory() {
+    File file = new File(getCachesDirectory(), "gradle");
+    if (!file.exists()) {
+      if (!file.mkdir()) {
+        System.err.println("Failed to create gradle directory..");
       }
     }
     return file;

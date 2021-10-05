@@ -30,12 +30,9 @@ import io.mohamed.resolver.core.model.ProjectProperty;
 import io.mohamed.resolver.core.model.Repository;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
@@ -85,6 +82,7 @@ public class DependencyResolver {
   // the list of repositories to search against
   private List<Repository> allRepositories;
   private DependencyResolverCallback dependencyResolverCallback;
+  private final Fetcher fetcher = Fetcher.getInstance();
 
   /**
    * Creates a new DependencyResolver
@@ -264,7 +262,6 @@ public class DependencyResolver {
     } else {
       dependencyResolverCallback.error("No artifactId found for dependency " + groupId);
     }
-    // TODO: make an optional flag to allow test dependencies
     if (scopeNode != null) {
       scope = scopeNode.getTextContent();
       if (scope.equals("test")) {
@@ -339,6 +336,9 @@ public class DependencyResolver {
     if (loadedDependencies.containsValue(dependency)) {
       return;
     }
+    if (repoIndex >= (allRepositories.size() - 1)) {
+      repoIndex = 0;
+    }
     // start the resolving
     startResolverThread(dependency);
   }
@@ -353,8 +353,8 @@ public class DependencyResolver {
                 if (repoIndex >= (allRepositories.size() - 1)) {
                   this.artifactFound = false;
                   this.pomDownloadUrl = pomUrl;
-                  this.mavenRepo = mavenRepo;
                   this.dependencies = dependencies;
+                  this.mavenRepo = mavenRepo;
                   finishResolve(dependency1);
                 } else {
                   repoIndex++;
@@ -389,7 +389,7 @@ public class DependencyResolver {
           "Didn't find artifact " + dependency + " in any repository!");
       dependencyResolverCallback.error("Searched in:");
       for (Repository repo : allRepositories) {
-        dependencyResolverCallback.error(repo + pomDownloadUrl);
+        dependencyResolverCallback.error(repo + getPomDownloadUrl(dependency));
       }
       done = true;
       return;
@@ -513,7 +513,6 @@ public class DependencyResolver {
      */
     public ResolverThread(Repository repo, Dependency dependency, ResolveCallback callback) {
       this.repo = repo;
-      pomDownloadUrl = getPomDownloadUrl(dependency);
       this.dependency = dependency;
       this.callback = callback;
     }
@@ -521,6 +520,28 @@ public class DependencyResolver {
     @Override
     public void run() {
       try {
+        if (dependency.getVersion() == null || dependency.getVersion().isEmpty()) {
+          DependencyVersion version = VersionManager.getVersions(dependency, repo, dependencyResolverCallback);
+          if (version != null) {
+            dependency.setVersion(version.getLatestVersion());
+          }
+        }
+        pomDownloadUrl = getPomDownloadUrl(dependency);
+        // the plexus library caused many builds to fail, because of the fact, its main artifact has
+        // an invalid XML, better skip it
+        if (dependency.getGroupId().contains("plexus")) {
+          dependencyResolverCallback.info(
+              "[WARNING] Skipping Invalid file " + repo + pomDownloadUrl);
+          try {
+            // we report the artifact was found here, yet with null dependency, so we indicate we
+            // want to skip this dependency.
+            callback.done(true, pomDownloadUrl, repo, dependencies, dependency);
+            return;
+          } catch (IOException ioException) {
+            ioException.printStackTrace();
+          }
+        }
+        dependencyResolverCallback.verbose("Preloading " + repo + pomDownloadUrl);
         URL url = new URL(repo + pomDownloadUrl);
         File cachesDir = Util.getCachesDirectory();
         File artifactDirectory =
@@ -537,13 +558,8 @@ public class DependencyResolver {
         factory.setIgnoringElementContentWhitespace(true);
         DocumentBuilder builder = factory.newDocumentBuilder();
         if (!outputFile.exists()) {
-          // download and save the file first
-          ReadableByteChannel rbc = Channels.newChannel(url.openStream());
-          // if we reached here with no FileNotFoundException, so the POM file was found in this
-          // repo
           dependencyResolverCallback.dependencyPomDownloading(repo + pomDownloadUrl);
-          FileOutputStream fos = new FileOutputStream(outputFile);
-          fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+          fetcher.downloadFile(url, outputFile);
           dependencyResolverCallback.dependencyPomDownloaded(repo + pomDownloadUrl);
         }
         doc = builder.parse(outputFile);
@@ -620,11 +636,12 @@ public class DependencyResolver {
             }
           }
         }
-      } catch (IOException | ParserConfigurationException e) {
+      } catch (IOException | ParserConfigurationException ignored) {
       } catch (SAXException e) {
         dependencyResolverCallback.info("[WARNING] Skipping Invalid file " + repo + pomDownloadUrl);
         try {
-          // we report the artifact was found here, yet with null dependency, so we indicate we want to skip this dependency.
+          // we report the artifact was found here, yet with null dependency, so we indicate we want
+          // to skip this dependency.
           callback.done(true, pomDownloadUrl, repo, dependencies, dependency);
         } catch (IOException ioException) {
           ioException.printStackTrace();
