@@ -9,9 +9,6 @@ application {
     mainClassName='io.mohamed.resolver.gui.Main'
 }
 
-def lin_java_home = hasProperty('org.gradle.java.home') ? getProperty('org.gradle.java.home') : System.getenv('JAVA_HOME')
-def lin_fx_jmods = hasProperty('linux.fx.mods') ? getProperty('linux.fx.mods') : System.getenv('PATH_TO_FX_MODS_LIN')
-
 def win_java_home = hasProperty('windows.java.home') ? getProperty('windows.java.home') : "C:\\Users\\Tamer\\Downloads\\jdk-14.0.2+12"
 def win_fx_jmods = hasProperty('windows.fx.mods') ? getProperty('windows.fx.mods') : 'C:\\Users\\Tamer\\Downloads\\jdk-14.0.2+12\\jmods'
 

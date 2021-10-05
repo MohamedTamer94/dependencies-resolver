@@ -25,7 +25,7 @@ plugins {
 }
 
 group 'io.mohamed.resolver'
-version '0.3-alpha'
+version '0.4-alpha'
 description = 'A CLI to resolve and download dependencies for the given artifact'
 
 repositories {
