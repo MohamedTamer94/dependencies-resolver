@@ -322,8 +322,7 @@ public class DependencyDownloader {
             dependencyResolverCallback.info(
                 "[WARNING] The AAR "
                     + outputFile.getName()
-                    + " contains resource files. These files will not be included in the final JAR."
-                    + "");
+                    + " contains resource files. These files will not be included in the final JAR.");
           }
         }
         if (fileDownloadUrl != null) {

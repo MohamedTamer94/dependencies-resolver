@@ -23,19 +23,17 @@
 // -*- mode: java; c-basic-offset: 2; -*-
 package io.mohamed.resolver.core.resolver;
 
-import io.mohamed.resolver.core.model.DependencyVersion;
-import io.mohamed.resolver.core.util.Fetcher;
-import io.mohamed.resolver.core.util.Util;
 import io.mohamed.resolver.core.VersionManager;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback;
 import io.mohamed.resolver.core.callback.ResolveCallback;
 import io.mohamed.resolver.core.model.Dependency;
+import io.mohamed.resolver.core.model.DependencyVersion;
 import io.mohamed.resolver.core.model.ProjectProperty;
 import io.mohamed.resolver.core.model.Repository;
-import java.io.BufferedReader;
+import io.mohamed.resolver.core.util.Fetcher;
+import io.mohamed.resolver.core.util.Util;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,8 +46,6 @@ import java.util.regex.Pattern;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import org.jsoup.Jsoup;
-import org.jsoup.select.Elements;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -150,10 +146,24 @@ public class DependencyResolver {
     Matcher m = p.matcher(str);
     // if an occurrence if a pattern was found in a given string...
     if (m.find()) {
+      boolean propertyFound = false;
       String propertyName = str.replaceAll("(.*)\\$\\{([^&]*)}(.*)", "$1$2$3");
       for (ProjectProperty projectProperty : properties) {
         if (projectProperty.getName().equals(propertyName)) {
           str = projectProperty.getValue();
+          propertyFound = true;
+          break;
+        }
+      }
+      if (!propertyFound) {
+        try {
+          DependencyVersion dependencyVersion = VersionManager.getVersions(
+              new Dependency(groupID, artifactId, null), repository, dependencyResolverCallback);
+          if (dependencyVersion != null) {
+            str = dependencyVersion.getLatestVersion();
+          }
+        } catch (ParserConfigurationException | SAXException e) {
+          e.printStackTrace();
         }
       }
     }
@@ -167,40 +177,24 @@ public class DependencyResolver {
       String startVersion = str.split(",")[0].trim();
       String endVersion = str.split(",")[1].trim();
       try {
-        URL url = new URL(repository.getUrl() + groupID + "/" + artifactId);
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(url.openStream()));
-
-        StringBuilder stringBuilder = new StringBuilder();
-
-        String inputLine;
-        while ((inputLine = bufferedReader.readLine()) != null) {
-          stringBuilder.append(inputLine);
-          stringBuilder.append(System.lineSeparator());
-        }
-
-        bufferedReader.close();
-        String html = stringBuilder.toString().trim();
-        org.jsoup.nodes.Document document = Jsoup.parse(html);
-        Elements elements = document.select("a");
-        List<String> versions = new ArrayList<>();
-        for (org.jsoup.nodes.Element element : elements) {
-          String href = element.attr("href");
-          if (href.endsWith("/") && !href.equals("../")) {
-            versions.add(href.substring(0, href.length() - 1));
-          }
-        }
-        String preferredVersion = null;
-        for (String version : versions) {
-          if (compareVersions(version, startVersion) == 1) {
-            if (compareVersions(version, endVersion) == -1) {
-              preferredVersion = version;
-              break;
+        DependencyVersion dependencyVersion = VersionManager.getVersions(
+                new Dependency(groupID, artifactId, null), repository, dependencyResolverCallback);
+        List<String> versions;
+        if (dependencyVersion != null) {
+          versions = dependencyVersion.getVersionNames();
+          String preferredVersion = null;
+          for (String version : versions) {
+            if (compareVersions(version, startVersion) == 1) {
+              if (compareVersions(version, endVersion) == -1) {
+                preferredVersion = version;
+                break;
+              }
             }
           }
+          if (preferredVersion != null) return dependencyVersion.getLatestVersion();
         }
-        if (preferredVersion != null) return startVersion;
-      } catch (IOException e) {
-        // the repository doesn't support listing files
+        return startVersion;
+      } catch (ParserConfigurationException | SAXException e) {
         return startVersion;
       }
     }
