@@ -20,7 +20,7 @@
  *   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.mohamed.resolver.core;
+package io.mohamed.resolver.core.merge;
 
 import java.io.File;
 import java.io.FileInputStream;

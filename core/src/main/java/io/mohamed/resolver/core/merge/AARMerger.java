@@ -20,7 +20,7 @@
  *   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.mohamed.resolver.core;
+package io.mohamed.resolver.core.merge;
 
 import com.android.ide.common.internal.AaptCruncher;
 import com.android.ide.common.internal.PngCruncher;
@@ -37,8 +37,7 @@ import com.android.manifmerger.ManifestMerger2.MergeType;
 import com.android.manifmerger.MergingReport;
 import com.android.manifmerger.XmlDocument;
 import com.android.utils.ILogger;
-import com.android.utils.StdLogger;
-import com.android.utils.StdLogger.Level;
+import io.mohamed.resolver.core.Util;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback.MergeStage;
 import io.mohamed.resolver.core.model.Dependency;
@@ -95,7 +94,6 @@ public class AARMerger {
   /**
    * Merges the given aar files into one
    *
-   * @param verbose weather to print debug messages or not
    * @param downloadedFiles the aar files to merge
    * @param mainDependency the main dependency, used for writing the AAR name
    * @return the output AAR file
@@ -103,9 +101,7 @@ public class AARMerger {
    * @throws MergeFailureException when an error occurs when merging android manifests
    * @throws MergingException when resources merging fails
    */
-  public File merge(
-      boolean verbose,
-      List<File> downloadedFiles,
+  public File merge(List<File> downloadedFiles,
       Dependency mainDependency,
       DependencyResolverCallback callback)
       throws IOException, MergeFailureException, MergingException {
@@ -159,14 +155,14 @@ public class AARMerger {
     // merge android manifest files into one file
     callback.merging(MergeStage.MERGE_MANIFEST);
     File mainManifest = new File(Util.getMergedLibrariesDirectory(), "AndroidManifest.xml");
-    PrintWriter writer = new PrintWriter(mainManifest, "UTF-8");
+    PrintWriter writer = new PrintWriter(mainManifest, StandardCharsets.UTF_8);
     writer.println(
         "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
             + "<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"\n"
             + "    xmlns:tools=\"http://schemas.android.com/tools\"\n"
             + "    package=\"com.test\"><uses-sdk android:minSdkVersion=\"31\"/></manifest>");
     writer.close();
-    ILogger logger = new StdLogger(verbose ? Level.VERBOSE : Level.ERROR);
+    ILogger logger = new Logger(callback);
     Invoker<?> invoker = ManifestMerger2.newMerger(mainManifest, logger, MergeType.APPLICATION);
     invoker.addLibraryManifests(androidManifests.toArray(new File[0]));
     MergingReport report = invoker.merge();
@@ -228,7 +224,9 @@ public class AARMerger {
     File aar =
         new File(
             Util.getMergedLibrariesDirectory(),
-            mainDependency.getArtifactId() + "-" + mainDependency.getVersion() + ".aar");
+            (mainDependency != null
+                ? mainDependency.getArtifactId() + "-" + mainDependency.getVersion()
+                : "merged") + ".aar");
     try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(aar))) {
       // add assets
       for (File assetDir : assetsDirectory) {
@@ -277,7 +275,7 @@ public class AARMerger {
   private void addDirectory(File directory, ZipOutputStream out) throws IOException {
     Files.walkFileTree(
         directory.toPath(),
-        new SimpleFileVisitor<Path>() {
+        new SimpleFileVisitor<>() {
           public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
               throws IOException {
             out.putNextEntry(
@@ -327,5 +325,34 @@ public class AARMerger {
       }
     }
     return !filesCopied.isEmpty();
+  }
+
+  static class Logger implements ILogger {
+    private final DependencyResolverCallback callback;
+
+    public Logger(DependencyResolverCallback callback) {
+      super();
+      this.callback = callback;
+    }
+
+    @Override
+    public void error(Throwable throwable, String s, Object... objects) {
+      callback.error(s);
+    }
+
+    @Override
+    public void warning(String s, Object... objects) {
+      callback.info("[WARNING] " + s);
+    }
+
+    @Override
+    public void info(String s, Object... objects) {
+      callback.info(s);
+    }
+
+    @Override
+    public void verbose(String s, Object... objects) {
+      callback.verbose(s);
+    }
   }
 }

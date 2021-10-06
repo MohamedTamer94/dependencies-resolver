@@ -278,6 +278,11 @@ public class Main {
             .collect(Collectors.toList()));
     Dependency mainDependency;
     boolean useGradle = false;
+    boolean mergeLibraries = commandLine.hasOption("merge");
+    boolean filterAppinventorDependencies = commandLine.hasOption("filter-appinventor-dependencies");
+    boolean jarOnly = commandLine.hasOption("jarOnly");
+    boolean verbose = commandLine.hasOption("verbose");
+    boolean jetifyLibraries = commandLine.hasOption("jetify");
     if (commandLine.hasOption("dependency")) {
       mainDependency = Dependency.valueOf(commandLine.getOptionValue("dependency"));
     } else if (commandLine.hasOption("groupId") && commandLine.hasOption("artifactId")) {
@@ -381,7 +386,7 @@ public class Main {
 
           @Override
           public void verbose(String message) {
-            if (commandLine.hasOption("verbose")) {
+            if (verbose) {
               System.out.println(message);
             }
           }
@@ -413,7 +418,7 @@ public class Main {
                   System.out.println("Successfully downloaded " + fileList.size() + " files.");
                   // copy all downloaded files to the output directory
                   System.out.println("Copying libraries to output directory..");
-                  copyLibraries(fileList, dependenciesDir, commandLine.hasOption("verbose"));
+                  copyLibraries(fileList, dependenciesDir, verbose);
                   System.out.println("Success!");
                   Instant end = Instant.now();
                   System.out.println(
@@ -427,13 +432,12 @@ public class Main {
                 .setCallback(callback)
                 .setDependencies(dependencyList)
                 .setRepositories(repositories)
-                .setJarOnly(commandLine.hasOption("jarOnly"))
-                .setMerge(commandLine.hasOption("merge"))
+                .setJarOnly(jarOnly)
+                .setMerge(mergeLibraries)
                 .setDependencyResolverCallback(dependencyResolverCallback)
                 .setFilterAppInventorDependencies(
-                    commandLine.hasOption("filter-appinventor-dependencies"))
-                .setVerbose(commandLine.hasOption("verbose"))
-                .setJetifyLibraries(commandLine.hasOption("jetify"))
+                    filterAppinventorDependencies)
+                .setJetifyLibraries(jetifyLibraries)
                 .resolve();
           };
       new DependencyResolver.Builder()
@@ -449,7 +453,7 @@ public class Main {
       }
       Callback callback = fileList -> {
         System.out.println("Copying libraries to output directory..");
-        copyLibraries(fileList, dependenciesDir, commandLine.hasOption("verbose"));
+        copyLibraries(fileList, dependenciesDir, verbose);
         System.out.println("Done!");
         Instant end = Instant.now();
         System.out.println(
@@ -461,6 +465,10 @@ public class Main {
       new GradleDependencyResolver.Builder()
           .setGradleFile(gradleBuildFile)
           .setCallback(callback)
+          .setJarOnly(jarOnly)
+          .setMergeLibraries(mergeLibraries)
+          .setFilterAppinventorDependencies(filterAppinventorDependencies)
+          .setJetifyLibraries(jetifyLibraries)
           .setDependencyResolverCallback(dependencyResolverCallback)
           .resolve();
     }

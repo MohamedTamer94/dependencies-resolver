@@ -23,8 +23,8 @@
 // -*- mode: java; c-basic-offset: 2; -*-
 package io.mohamed.resolver.core;
 
-import com.android.ide.common.res2.MergingException;
-import com.android.manifmerger.ManifestMerger2.MergeFailureException;
+import io.mohamed.resolver.core.merge.LibraryMerger;
+import io.mohamed.resolver.core.merge.LibraryMerger.MergeResult;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback.MergeStage;
 import io.mohamed.resolver.core.callback.DownloadCallback;
@@ -39,7 +39,6 @@ import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.apache.commons.io.FilenameUtils;
 
@@ -56,8 +55,6 @@ public class DependencyDownloader {
   private static List<Repository> allRepositories = new ArrayList<>();
   // weather to include jar files only or not
   private static boolean jarOnly;
-  // weather to log debug messages or not
-  private static boolean verbose;
   // the dependency resolver callback
   private static DependencyResolverCallback dependencyResolverCallback;
   // invoke jetifier on downloaded libraries
@@ -140,7 +137,6 @@ public class DependencyDownloader {
    *     downloaded dependencies
    * @param merge a flag to merge all files into one JAR/AAR
    * @param mainDependency the main dependency
-   * @param verbose a flag to log debug messages
    * @param repositories list of custom repository urls
    * @param jarOnly includes jar files only
    * @param dependencyResolverCallback the dependency resolver callback
@@ -152,7 +148,6 @@ public class DependencyDownloader {
       boolean filterAppInventorDependencies,
       boolean merge,
       Dependency mainDependency,
-      boolean verbose,
       List<String> repositories,
       boolean jarOnly,
       DependencyResolverCallback dependencyResolverCallback,
@@ -163,7 +158,6 @@ public class DependencyDownloader {
     this.mainDependency = mainDependency;
     DependencyDownloader.jetifyLibraries = jetifyLibraries;
     DependencyDownloader.dependencyResolverCallback = dependencyResolverCallback;
-    DependencyDownloader.verbose = verbose;
     DependencyDownloader.jarOnly = jarOnly;
     allRepositories.addAll(Repository.COMMON_MAVEN_REPOSITORIES);
     for (String repoUrl : repositories) {
@@ -221,8 +215,11 @@ public class DependencyDownloader {
       done = true;
       if (merge) {
         dependencyResolverCallback.merging(MergeStage.START);
-        boolean result = mergeLibraries();
-        if (result) {
+        MergeResult result =
+            LibraryMerger.mergeLibraries(
+                mainDependency, downloadedFiles, dependencyResolverCallback);
+        downloadedFiles = result.getMergedLibraries();
+        if (result.isSuccess()) {
           dependencyResolverCallback.mergeSuccess();
         } else {
           dependencyResolverCallback.mergeFailed();
@@ -240,48 +237,6 @@ public class DependencyDownloader {
         callback.done(downloadedFiles);
         Thread.currentThread().interrupt();
       }
-    }
-  }
-
-  /**
-   * Checks if any of the downloaded files is an AAR file
-   *
-   * @return true if any AAR file was downloaded
-   */
-  private boolean hasAnyAar() {
-    return downloadedFiles.stream().anyMatch(Util::isAar);
-  }
-
-  /**
-   * Merges all the downloaded libraries into one file If all the downloaded files were a jar:
-   * Invokes the JARMerger to merge all jar files into one If any of the downloaded files were an
-   * aar: Invokes the AARMerger to merge all the aar and jar library files into one AAR
-   *
-   * @return true if merging libraries was successful
-   */
-  private boolean mergeLibraries() {
-    try {
-      if (hasAnyAar()) {
-        File result =
-            new AARMerger()
-                .merge(verbose, downloadedFiles, mainDependency, dependencyResolverCallback);
-        if (result != null) {
-          downloadedFiles = new ArrayList<>(Collections.singletonList(result));
-          return true;
-        }
-      } else {
-        File result =
-            new File(
-                Util.getMergedLibrariesDirectory(),
-                mainDependency.getArtifactId() + "-" + mainDependency.getVersion() + ".jar");
-        new JARMerger().merge(downloadedFiles, result);
-        downloadedFiles = new ArrayList<>(Collections.singletonList(result));
-        return true;
-      }
-      return false;
-    } catch (IOException | MergingException | MergeFailureException e) {
-      e.printStackTrace();
-      return false;
     }
   }
 
@@ -393,8 +348,6 @@ public class DependencyDownloader {
     private boolean filterAppInventorDependencies = false;
     // the dependencies to download
     private List<Dependency> dependencies = new ArrayList<>();
-    // weather to log debug messages
-    private boolean verbose = false;
     // custom repositories for resolving dependencies
     private List<String> repositories = new ArrayList<>();
     // includes jar files only
@@ -403,17 +356,6 @@ public class DependencyDownloader {
     private DependencyResolverCallback dependencyResolverCallback;
     // jetify downloaded libraries
     private boolean jetifyLibraries;
-
-    /**
-     * Specifies weather to log debug messages
-     *
-     * @param verbose true to log debug messages
-     * @return the Builder instance
-     */
-    public Builder setVerbose(boolean verbose) {
-      this.verbose = verbose;
-      return this;
-    }
 
     /**
      * Specifies the dependency resolver callback
@@ -528,7 +470,6 @@ public class DependencyDownloader {
               filterAppInventorDependencies,
               merge,
               mainDependency,
-              verbose,
               repositories,
               jarOnly,
               dependencyResolverCallback,

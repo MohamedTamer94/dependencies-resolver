@@ -394,7 +394,6 @@ public class DependenciesResolverApplication extends Application implements Init
                       .setJarOnly(jarOnly)
                       .setMainDependency(finalDependency)
                       .setMerge(mergeLibraries)
-                      .setVerbose(verbose)
                       .setJetifyLibraries(jetifyLibraries)
                       .setRepositories(repositories)
                       .resolve();
