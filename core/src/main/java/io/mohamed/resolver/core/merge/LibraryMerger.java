@@ -24,7 +24,7 @@ package io.mohamed.resolver.core.merge;
 
 import com.android.ide.common.res2.MergingException;
 import com.android.manifmerger.ManifestMerger2.MergeFailureException;
-import io.mohamed.resolver.core.Util;
+import io.mohamed.resolver.core.util.Util;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback;
 import io.mohamed.resolver.core.model.Dependency;
 import java.io.File;

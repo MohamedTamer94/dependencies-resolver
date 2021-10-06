@@ -20,40 +20,35 @@
  *   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.mohamed.resolver.core;
+package io.mohamed.resolver.core.util;
 
-import java.util.List;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 
-/**
- * A class that represents the dependency version information
- *
- * @author Mohamed Tamer
- */
-public class DependencyVersion {
+/** A class to fetch data from the web */
+public class Fetcher {
+  // the fetcher instance which is globally used by the dependencies resolver classes
+  private static final Fetcher fetcher = new Fetcher();
 
-  // the repository latest version name
-  private final String latestVersion;
-  // the repository version names
-  private final List<String> versionNames;
+  /** @return the global fetcher instance */
+  public static Fetcher getInstance() {
+    return fetcher;
+  }
 
   /**
-   * Creates a new DependencyVersion class
+   * Downloads a file from the web
    *
-   * @param versionNames a list of the dependency versions
-   * @param latestVersion the dependency latest version
+   * @param url the url to the file
+   * @param outFile the local file to download the online file to
+   * @throws IOException if an error is thrown while downloading
    */
-  public DependencyVersion(List<String> versionNames, String latestVersion) {
-    this.versionNames = versionNames;
-    this.latestVersion = latestVersion;
-  }
-
-  /** @return the dependency version names */
-  public List<String> getVersionNames() {
-    return versionNames;
-  }
-
-  /** @return the dependency latest version name */
-  public String getLatestVersion() {
-    return latestVersion;
+  public void downloadFile(URL url, File outFile) throws IOException {
+    ReadableByteChannel rbc = Channels.newChannel(url.openStream());
+    FileOutputStream fos = new FileOutputStream(outFile);
+    fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
   }
 }

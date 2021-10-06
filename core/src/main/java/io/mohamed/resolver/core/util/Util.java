@@ -20,8 +20,9 @@
  *   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.mohamed.resolver.core;
+package io.mohamed.resolver.core.util;
 
+import io.mohamed.resolver.core.resolver.DependencyDownloader;
 import io.mohamed.resolver.core.version.Version;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -42,7 +43,7 @@ import org.apache.commons.io.IOUtils;
 
 public class Util {
 
-  static boolean hasResDirectory(File file) throws IOException {
+  public static boolean hasResDirectory(File file) throws IOException {
     ZipFile zipFile = new ZipFile(file);
     Enumeration<? extends ZipEntry> entries = zipFile.entries();
     while (entries.hasMoreElements()) {
@@ -54,7 +55,7 @@ public class Util {
     return false;
   }
 
-  static File getLocalFilesDir() {
+  public static File getLocalFilesDir() {
     String workingDirectory;
     String OS = System.getProperty("os.name").toLowerCase();
     if (OS.contains("win")) {

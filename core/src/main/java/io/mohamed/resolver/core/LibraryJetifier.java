@@ -23,6 +23,7 @@
 package io.mohamed.resolver.core;
 
 import io.mohamed.resolver.core.callback.DependencyResolverCallback;
+import io.mohamed.resolver.core.util.Util;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;

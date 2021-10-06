@@ -24,7 +24,10 @@ package io.mohamed.resolver.core;
 
 import io.mohamed.resolver.core.callback.DependencyResolverCallback;
 import io.mohamed.resolver.core.model.Dependency;
+import io.mohamed.resolver.core.model.DependencyVersion;
 import io.mohamed.resolver.core.model.Repository;
+import io.mohamed.resolver.core.util.Fetcher;
+import io.mohamed.resolver.core.util.Util;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;

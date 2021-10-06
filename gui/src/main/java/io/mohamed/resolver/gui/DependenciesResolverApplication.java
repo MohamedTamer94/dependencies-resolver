@@ -22,9 +22,9 @@
 
 package io.mohamed.resolver.gui;
 
-import io.mohamed.resolver.core.DependencyDownloader;
-import io.mohamed.resolver.core.DependencyResolver;
-import io.mohamed.resolver.core.Util;
+import io.mohamed.resolver.core.resolver.DependencyDownloader;
+import io.mohamed.resolver.core.resolver.DependencyResolver;
+import io.mohamed.resolver.core.util.Util;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback;
 import io.mohamed.resolver.core.callback.FilesDownloadedCallback;
 import io.mohamed.resolver.core.callback.ResolveCallback;

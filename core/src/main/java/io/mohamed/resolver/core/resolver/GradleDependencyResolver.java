@@ -20,8 +20,11 @@
  *   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.mohamed.resolver.core;
+package io.mohamed.resolver.core.resolver;
 
+import io.mohamed.resolver.core.AppInvDependencyManager;
+import io.mohamed.resolver.core.LibraryJetifier;
+import io.mohamed.resolver.core.util.Util;
 import io.mohamed.resolver.core.merge.LibraryMerger;
 import io.mohamed.resolver.core.merge.LibraryMerger.MergeResult;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback;

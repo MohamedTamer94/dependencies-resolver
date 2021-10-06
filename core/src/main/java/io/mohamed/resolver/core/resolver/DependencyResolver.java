@@ -21,8 +21,12 @@
  */
 
 // -*- mode: java; c-basic-offset: 2; -*-
-package io.mohamed.resolver.core;
+package io.mohamed.resolver.core.resolver;
 
+import io.mohamed.resolver.core.model.DependencyVersion;
+import io.mohamed.resolver.core.util.Fetcher;
+import io.mohamed.resolver.core.util.Util;
+import io.mohamed.resolver.core.VersionManager;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback;
 import io.mohamed.resolver.core.callback.ResolveCallback;
 import io.mohamed.resolver.core.model.Dependency;

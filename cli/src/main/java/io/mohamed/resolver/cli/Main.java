@@ -23,11 +23,11 @@
 // -*- mode: java; c-basic-offset: 2; -*-
 package io.mohamed.resolver.cli;
 
-import io.mohamed.resolver.core.DependencyDownloader.Builder;
-import io.mohamed.resolver.core.DependencyResolver;
-import io.mohamed.resolver.core.GradleDependencyResolver;
-import io.mohamed.resolver.core.GradleDependencyResolver.Callback;
-import io.mohamed.resolver.core.Util;
+import io.mohamed.resolver.core.resolver.DependencyDownloader.Builder;
+import io.mohamed.resolver.core.resolver.DependencyResolver;
+import io.mohamed.resolver.core.resolver.GradleDependencyResolver;
+import io.mohamed.resolver.core.resolver.GradleDependencyResolver.Callback;
+import io.mohamed.resolver.core.util.Util;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback;
 import io.mohamed.resolver.core.callback.FilesDownloadedCallback;
 import io.mohamed.resolver.core.callback.ResolveCallback;

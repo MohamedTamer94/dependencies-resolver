@@ -21,8 +21,10 @@
  */
 
 // -*- mode: java; c-basic-offset: 2; -*-
-package io.mohamed.resolver.core;
+package io.mohamed.resolver.core.resolver;
 
+import io.mohamed.resolver.core.AppInvDependencyManager;
+import io.mohamed.resolver.core.LibraryJetifier;
 import io.mohamed.resolver.core.merge.LibraryMerger;
 import io.mohamed.resolver.core.merge.LibraryMerger.MergeResult;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback;
@@ -31,6 +33,7 @@ import io.mohamed.resolver.core.callback.DownloadCallback;
 import io.mohamed.resolver.core.callback.FilesDownloadedCallback;
 import io.mohamed.resolver.core.model.Dependency;
 import io.mohamed.resolver.core.model.Repository;
+import io.mohamed.resolver.core.util.Util;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
