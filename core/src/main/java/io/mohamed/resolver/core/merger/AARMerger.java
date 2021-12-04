@@ -37,10 +37,10 @@ import com.android.manifmerger.ManifestMerger2.MergeType;
 import com.android.manifmerger.MergingReport;
 import com.android.manifmerger.XmlDocument;
 import com.android.utils.ILogger;
-import io.mohamed.resolver.core.util.Util;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback.MergeStage;
 import io.mohamed.resolver.core.model.Dependency;
+import io.mohamed.resolver.core.util.Util;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -57,6 +57,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -101,9 +102,8 @@ public class AARMerger {
    * @throws MergeFailureException when an error occurs when merging android manifests
    * @throws MergingException when resources merging fails
    */
-  public File merge(List<File> downloadedFiles,
-      Dependency mainDependency,
-      DependencyResolverCallback callback)
+  public File merge(
+      List<File> downloadedFiles, Dependency mainDependency, DependencyResolverCallback callback)
       throws IOException, MergeFailureException, MergingException {
     // weather to print debug messages
     this.callback = callback;
@@ -114,6 +114,7 @@ public class AARMerger {
     List<File> jniDirectories = new ArrayList<>();
     List<File> assetsDirectory = new ArrayList<>();
     List<File> libsDirectory = new ArrayList<>();
+    List<File> proguardFiles = new ArrayList<>();
     for (File library : downloadedFiles) {
       if (Util.isAar(library)) {
         try {
@@ -121,6 +122,13 @@ public class AARMerger {
           Util.extractFile(
               library.toPath(), "AndroidManifest.xml", androidManifestOutputFile.toPath());
           androidManifests.add(androidManifestOutputFile);
+        } catch (IOException
+            | ProviderNotFoundException ignored) { // the library has no android manifest
+        }
+        try {
+          File proguardOutputFile = new File(library.getParentFile(), "proguard.txt");
+          Util.extractFile(library.toPath(), "proguard.txt", proguardOutputFile.toPath());
+          proguardFiles.add(proguardOutputFile);
         } catch (IOException
             | ProviderNotFoundException ignored) { // the library has no android manifest
         }
@@ -219,29 +227,50 @@ public class AARMerger {
         new MergedResourceWriter(outputDir, cruncher, false, false, null);
     mergedResourceWriter.setInsertSourceMarkers(true);
     merger.mergeData(mergedResourceWriter, false);
-    // generate the final aar
     callback.merging(MergeStage.MERGE_RESOURCES_SUCCESS);
+    // merge proguard files
+    File mainProguardFile = new File(Util.getMergedLibrariesDirectory(), "proguard.txt");
+    HashSet<String> outputProguardLines = new HashSet<>(); // we use hashset to disallow duplicates
+    for (File proguardFile : proguardFiles) {
+      List<String> proguardLines = Files.readAllLines(proguardFile.toPath());
+      outputProguardLines.addAll(proguardLines);
+    }
+    try (PrintWriter proguardWriter = new PrintWriter(mainProguardFile, StandardCharsets.UTF_8)) {
+      for (String line : outputProguardLines) {
+        if (!line.trim().startsWith("#")) { // don't include comments
+          proguardWriter.write(line + "\n");
+        }
+      }
+    }
+    // generate the final aar
     File aar =
         new File(
             Util.getMergedLibrariesDirectory(),
             (mainDependency != null
-                ? mainDependency.getArtifactId() + "-" + mainDependency.getVersion()
-                : "merged") + ".aar");
+                    ? mainDependency.getArtifactId() + "-" + mainDependency.getVersion()
+                    : "merged")
+                + ".aar");
     try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(aar))) {
       // add assets
       for (File assetDir : assetsDirectory) {
         callback.verbose("Adding directory " + assetDir);
         addDirectory(assetDir, out);
       }
+      // add jni directories
       for (File jniDir : jniDirectories) {
         callback.verbose("Adding directory " + jniDir);
         addDirectory(jniDir, out);
       }
+      // add libraries
       for (File libDir : libsDirectory) {
         callback.verbose("Adding directory " + libDir);
         addDirectory(libDir, out);
       }
+      // add proguard file
+      addFile(mainProguardFile, "proguard.txt", out);
+      // add jar file
       addFile(mainClassesJar, "classes.jar", out);
+      // add android manifest
       addFile(mainManifest, "AndroidManifest.xml", out);
       addDirectory(outputDir, out);
     }
