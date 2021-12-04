@@ -46,11 +46,6 @@
         <Insets left="20.0" />
       </HBox.margin>
     </CheckBox>
-    <CheckBox fx:id="filterAppinventorDependenciesCheckbox" layoutX="218.0" layoutY="14.0" mnemonicParsing="false" text="Filter AppInventor Dependencies">
-      <HBox.margin>
-        <Insets left="20.0" />
-      </HBox.margin>
-    </CheckBox>
   </HBox>
   <Label layoutX="39.0" layoutY="22.0" text="Options">
     <font>

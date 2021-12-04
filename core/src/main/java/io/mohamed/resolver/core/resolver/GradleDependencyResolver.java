@@ -22,11 +22,11 @@
 
 package io.mohamed.resolver.core.resolver;
 
-import io.mohamed.resolver.core.AppInvDependencyManager;
-import io.mohamed.resolver.core.LibraryJetifier;
+import io.mohamed.resolver.core.util.AI2Dependency;
+import io.mohamed.resolver.core.util.LibraryJetifier;
 import io.mohamed.resolver.core.util.Util;
-import io.mohamed.resolver.core.merge.LibraryMerger;
-import io.mohamed.resolver.core.merge.LibraryMerger.MergeResult;
+import io.mohamed.resolver.core.merger.LibraryMerger;
+import io.mohamed.resolver.core.merger.LibraryMerger.MergeResult;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback.MergeStage;
 import io.mohamed.resolver.core.model.Dependency;
@@ -42,6 +42,7 @@ import org.gradle.tooling.GradleConnectionException;
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.ResultHandler;
+import org.gradle.tooling.model.GradleModuleVersion;
 import org.gradle.tooling.model.eclipse.EclipseProject;
 
 public class GradleDependencyResolver {
@@ -51,9 +52,9 @@ public class GradleDependencyResolver {
       File gradleDirectory,
       DependencyResolverCallback dependencyResolverCallback,
       Callback callback,
-      boolean filterAppinventorDependencies,
       boolean jarOnly,
-      boolean mergeLibraries, boolean jetifyLibraries) {
+      boolean mergeLibraries,
+      boolean jetifyLibraries) {
     dependencyResolverCallback.info("Building Dependencies Using Gradle..");
     try (ProjectConnection connection =
         GradleConnector.newConnector().forProjectDirectory(gradleDirectory).connect()) {
@@ -72,7 +73,6 @@ public class GradleDependencyResolver {
                       callback,
                       dependencyResolverCallback,
                       jarOnly,
-                      filterAppinventorDependencies,
                       mergeLibraries,
                       jetifyLibraries);
                 }
@@ -92,7 +92,8 @@ public class GradleDependencyResolver {
       Callback callback,
       DependencyResolverCallback dependencyResolverCallback,
       boolean jarOnly,
-      boolean filterAppinventorDependencies, boolean mergeLibraries, boolean jetifyLibraries) {
+      boolean mergeLibraries,
+      boolean jetifyLibraries) {
     dependencyResolverCallback.info("Resolving Downloaded dependencies..");
     try (ProjectConnection connection =
         GradleConnector.newConnector().forProjectDirectory(gradleFile).connect()) {
@@ -103,13 +104,15 @@ public class GradleDependencyResolver {
           .getClasspath()
           .forEach(
               e -> {
-                if (filterAppinventorDependencies) {
-                  AppInvDependencyManager appInvDependencyManager = new AppInvDependencyManager();
-                  Dependency dependency =
+                AI2Dependency appInvDependencyManager = new AI2Dependency();
+                GradleModuleVersion moduleVersion = e.getGradleModuleVersion();
+                Dependency dependency;
+                if (moduleVersion != null) {
+                  dependency =
                       new Dependency(
-                          e.getGradleModuleVersion().getGroup(),
-                          e.getGradleModuleVersion().getName(),
-                          e.getGradleModuleVersion().getVersion());
+                          moduleVersion.getGroup(),
+                          moduleVersion.getName(),
+                          moduleVersion.getVersion());
                   if (appInvDependencyManager.dependencyExists(dependency)) {
                     return;
                   }
@@ -142,8 +145,7 @@ public class GradleDependencyResolver {
               });
       if (jetifyLibraries) {
         try {
-          fileList =
-              new LibraryJetifier().jetify(fileList, dependencyResolverCallback);
+          fileList = new LibraryJetifier().jetify(fileList, dependencyResolverCallback);
         } catch (IOException | InterruptedException e) {
           e.printStackTrace();
         }
@@ -151,8 +153,7 @@ public class GradleDependencyResolver {
       if (mergeLibraries) {
         dependencyResolverCallback.merging(MergeStage.START);
         MergeResult result =
-            LibraryMerger.mergeLibraries(
-                null, fileList, dependencyResolverCallback);
+            LibraryMerger.mergeLibraries(null, fileList, dependencyResolverCallback);
         fileList = result.getMergedLibraries();
         if (result.isSuccess()) {
           dependencyResolverCallback.mergeSuccess();
@@ -175,7 +176,6 @@ public class GradleDependencyResolver {
     private Callback callback;
     private DependencyResolverCallback dependencyResolverCallback;
     private boolean jarOnly;
-    private boolean filterAppinventorDependencies;
     private boolean mergeLibraries;
     private boolean jetifyLibraries;
 
@@ -198,11 +198,6 @@ public class GradleDependencyResolver {
       return this;
     }
 
-    public Builder setFilterAppinventorDependencies(boolean filterAppinventorDependencies) {
-      this.filterAppinventorDependencies = filterAppinventorDependencies;
-      return this;
-    }
-
     public Builder setJarOnly(boolean jarOnly) {
       this.jarOnly = jarOnly;
       return this;
@@ -222,7 +217,13 @@ public class GradleDependencyResolver {
     public void resolve() {
       if (gradleDirectory == null && gradleFile != null) {
         gradleDirectory = new File(Util.getGradleDirectory(), UUID.randomUUID().toString());
-        gradleDirectory.mkdir();
+        if (!gradleDirectory.exists()) {
+          boolean result = gradleDirectory.mkdir();
+          if (!result) {
+            dependencyResolverCallback.error("Failed to create gradle directory.");
+            return;
+          }
+        }
         try {
           Files.copy(
               gradleFile.toPath(),
@@ -237,7 +238,6 @@ public class GradleDependencyResolver {
               gradleDirectory,
               dependencyResolverCallback,
               callback,
-              filterAppinventorDependencies,
               jarOnly,
               mergeLibraries,
               jetifyLibraries);

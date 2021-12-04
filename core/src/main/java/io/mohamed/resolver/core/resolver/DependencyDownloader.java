@@ -23,10 +23,10 @@
 // -*- mode: java; c-basic-offset: 2; -*-
 package io.mohamed.resolver.core.resolver;
 
-import io.mohamed.resolver.core.AppInvDependencyManager;
-import io.mohamed.resolver.core.LibraryJetifier;
-import io.mohamed.resolver.core.merge.LibraryMerger;
-import io.mohamed.resolver.core.merge.LibraryMerger.MergeResult;
+import io.mohamed.resolver.core.util.AI2Dependency;
+import io.mohamed.resolver.core.util.LibraryJetifier;
+import io.mohamed.resolver.core.merger.LibraryMerger;
+import io.mohamed.resolver.core.merger.LibraryMerger.MergeResult;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback.MergeStage;
 import io.mohamed.resolver.core.callback.DownloadCallback;
@@ -52,8 +52,6 @@ import org.apache.commons.io.FilenameUtils;
  */
 public class DependencyDownloader {
 
-  // a flag to indicate weather to filter appinventor dependencies from the downloaded dependencies
-  private static boolean filterAppInventorDependencies;
   // list of all repositories which dependencies will be validated against
   private static List<Repository> allRepositories = new ArrayList<>();
   // weather to include jar files only or not
@@ -136,8 +134,6 @@ public class DependencyDownloader {
    *
    * @param dependencies the dependencies to download
    * @param callback the callback to call when file download finishes
-   * @param filterAppInventorDependencies a flag to filter appinventor dependencies from the
-   *     downloaded dependencies
    * @param merge a flag to merge all files into one JAR/AAR
    * @param mainDependency the main dependency
    * @param repositories list of custom repository urls
@@ -148,7 +144,6 @@ public class DependencyDownloader {
   private void resolveDependenciesFiles(
       List<Dependency> dependencies,
       FilesDownloadedCallback callback,
-      boolean filterAppInventorDependencies,
       boolean merge,
       Dependency mainDependency,
       List<String> repositories,
@@ -169,7 +164,6 @@ public class DependencyDownloader {
       }
       allRepositories.add(new Repository(repoUrl));
     }
-    DependencyDownloader.filterAppInventorDependencies = filterAppInventorDependencies;
     // don't perform download if we have already finished downloading
     if (done) {
       return;
@@ -274,14 +268,12 @@ public class DependencyDownloader {
         String fileDownloadPath = getFileDownloadUrl(dependency);
         File outputFile = getOutputFileForDependency(dependency, "");
         File outputJarFile = getOutputFileForDependency(dependency, "jar");
-        if (filterAppInventorDependencies) {
-          AppInvDependencyManager cloner = new AppInvDependencyManager();
-          if (cloner.dependencyExists(dependency)) {
-            // this file was already included in app inventor libraries, we can skip this
-            callback.done(null, dependency);
-            interrupt();
-            return;
-          }
+        AI2Dependency cloner = new AI2Dependency();
+        if (cloner.dependencyExists(dependency)) {
+          // this file was already included in app inventor libraries, we can skip this
+          callback.done(null, dependency);
+          interrupt();
+          return;
         }
         if (!jarOnly) {
           if (outputFile.exists()) {
@@ -346,8 +338,6 @@ public class DependencyDownloader {
     private Dependency mainDependency = null;
     // the callback to invoke when the file download finishes
     private FilesDownloadedCallback callback = null;
-    // weather to filter appinventor dependencies from the download or not
-    private boolean filterAppInventorDependencies = false;
     // the dependencies to download
     private List<Dependency> dependencies = new ArrayList<>();
     // custom repositories for resolving dependencies
@@ -439,17 +429,6 @@ public class DependencyDownloader {
     }
 
     /**
-     * Specifies weather to filter appinventor dependencies from being downloaded or not
-     *
-     * @param filterAppInventorDependencies true to filter appinventor dependencies
-     * @return the Builder instance
-     */
-    public Builder setFilterAppInventorDependencies(boolean filterAppInventorDependencies) {
-      this.filterAppInventorDependencies = filterAppInventorDependencies;
-      return this;
-    }
-
-    /**
      * Specifies the dependencies to download
      *
      * @param dependencies the dependencies to download
@@ -469,7 +448,6 @@ public class DependencyDownloader {
           .resolveDependenciesFiles(
               dependencies,
               callback,
-              filterAppInventorDependencies,
               merge,
               mainDependency,
               repositories,

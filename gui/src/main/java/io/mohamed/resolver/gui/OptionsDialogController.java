@@ -56,8 +56,6 @@ public class OptionsDialogController implements Initializable {
   public CheckBox verboseCheckbox;
   // the verbose checkbox
   public CheckBox jarOnlyCheckbox;
-  // the filter appinventor dependencies checkbox
-  public CheckBox filterAppinventorDependenciesCheckbox;
   // the jetify libraries checkbox
   public CheckBox jetifyCheckbox;
   // the defined repository urls
@@ -68,8 +66,6 @@ public class OptionsDialogController implements Initializable {
   private boolean jarOnly;
   // the verbose value
   private boolean verbose;
-  // the filter appinventor dependencies value
-  private boolean filterAppinventorDependencies;
   // the jetify libraries value
   private boolean jetifyLibraries;
 
@@ -85,23 +81,17 @@ public class OptionsDialogController implements Initializable {
         SettingsManager.getSettingForKey(SettingsConstants.MERGE_LIBRARIES_SETTINGS_KEY);
     Setting jarOnlySetting =
         SettingsManager.getSettingForKey(SettingsConstants.JAR_ONLY_SETTINGS_KEY);
-    Setting filterAppinventorDependenciesSetting =
-        SettingsManager.getSettingForKey(
-            SettingsConstants.FILTER_APPINVENTOR_DEPENDENCIES_SETTINGS_KEY);
     Setting verboseSetting =
         SettingsManager.getSettingForKey(SettingsConstants.VERBOSE_SETTINGS_KEY);
     Setting jetifySetting = SettingsManager.getSettingForKey(SettingsConstants.JETIFY_SETTINGS_KEY);
     mergeLibraries = Boolean.parseBoolean(mergeLibrariesSetting.getValue().toString());
     jarOnly = Boolean.parseBoolean(jarOnlySetting.getValue().toString());
-    filterAppinventorDependencies =
-        Boolean.parseBoolean(filterAppinventorDependenciesSetting.getValue().toString());
     jetifyLibraries = Boolean.parseBoolean(jetifySetting.getValue().toString());
     verbose = Boolean.parseBoolean(verboseSetting.getValue().toString());
     repositoriesList.setItems(FXCollections.observableArrayList(repositories));
     repositoriesList.setEditable(true);
     mergeLibrariesCheckbox.setSelected(mergeLibraries);
     jarOnlyCheckbox.setSelected(jarOnly);
-    filterAppinventorDependenciesCheckbox.setSelected(filterAppinventorDependencies);
     verboseCheckbox.setSelected(verbose);
     jetifyCheckbox.setSelected(jetifyLibraries);
     repositoriesList.setCellFactory(TextFieldListCell.forListView());
@@ -155,13 +145,6 @@ public class OptionsDialogController implements Initializable {
           jarOnly = jarOnlyCheckbox.isSelected();
           jarOnlySetting.setValue(jarOnly);
           SettingsManager.updateSettingValue(jarOnlySetting, jarOnly);
-        }));
-    filterAppinventorDependenciesCheckbox.setOnAction(
-        (event -> {
-          filterAppinventorDependencies = filterAppinventorDependenciesCheckbox.isSelected();
-          filterAppinventorDependenciesSetting.setValue(filterAppinventorDependencies);
-          SettingsManager.updateSettingValue(
-              filterAppinventorDependenciesSetting, filterAppinventorDependencies);
         }));
     verboseCheckbox.setOnAction(
         (event -> {

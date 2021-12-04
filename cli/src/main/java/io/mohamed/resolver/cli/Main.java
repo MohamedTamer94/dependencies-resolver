@@ -85,11 +85,6 @@ public class Main {
     Option verbose = Option.builder("v").longOpt("verbose").desc("Show debug messages.").build();
     Option output =
         Option.builder("o").longOpt("output").desc("The output directory.").hasArg().build();
-    Option filterAppInventorDependencies =
-        Option.builder()
-            .longOpt("filter-appinventor-dependencies")
-            .desc("Don't include dependencies which app inventor includes by default.")
-            .build();
     Option merge =
         Option.builder("m")
             .longOpt("merge")
@@ -120,7 +115,7 @@ public class Main {
         Option.builder()
             .longOpt("jetify")
             .desc(
-                "Converts android.support.* references to androidx.*, this should be used with libraries that wasn't yet upgraded to AndroidX")
+                "Converts android.support.* references to androidx.*, this should be used with libraries that were not yet upgraded to AndroidX.")
             .build();
     Option gradle =
         Option.builder("g")
@@ -137,7 +132,6 @@ public class Main {
     options.addOption(verbose);
     options.addOption(output);
     options.addOption(merge);
-    options.addOption(filterAppInventorDependencies);
     options.addOption(gradleDependency);
     options.addOption(help);
     options.addOption(repository);
@@ -279,7 +273,6 @@ public class Main {
     Dependency mainDependency;
     boolean useGradle = false;
     boolean mergeLibraries = commandLine.hasOption("merge");
-    boolean filterAppinventorDependencies = commandLine.hasOption("filter-appinventor-dependencies");
     boolean jarOnly = commandLine.hasOption("jarOnly");
     boolean verbose = commandLine.hasOption("verbose");
     boolean jetifyLibraries = commandLine.hasOption("jetify");
@@ -435,8 +428,6 @@ public class Main {
                 .setJarOnly(jarOnly)
                 .setMerge(mergeLibraries)
                 .setDependencyResolverCallback(dependencyResolverCallback)
-                .setFilterAppInventorDependencies(
-                    filterAppinventorDependencies)
                 .setJetifyLibraries(jetifyLibraries)
                 .resolve();
           };
@@ -467,7 +458,6 @@ public class Main {
           .setCallback(callback)
           .setJarOnly(jarOnly)
           .setMergeLibraries(mergeLibraries)
-          .setFilterAppinventorDependencies(filterAppinventorDependencies)
           .setJetifyLibraries(jetifyLibraries)
           .setDependencyResolverCallback(dependencyResolverCallback)
           .resolve();

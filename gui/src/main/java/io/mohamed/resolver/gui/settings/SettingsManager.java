@@ -41,9 +41,6 @@ public class SettingsManager {
               new Setting(SettingsConstants.MERGE_LIBRARIES_SETTINGS_KEY, SettingType.STRING),
               new Setting(SettingsConstants.JAR_ONLY_SETTINGS_KEY, SettingType.STRING),
               new Setting(SettingsConstants.VERBOSE_SETTINGS_KEY, SettingType.STRING),
-              new Setting(
-                  SettingsConstants.FILTER_APPINVENTOR_DEPENDENCIES_SETTINGS_KEY,
-                  SettingType.STRING),
               new Setting(SettingsConstants.JETIFY_SETTINGS_KEY, SettingType.STRING)));
   private static final ArrayList<Setting> loadedSettings = new ArrayList<>();
   private static final Preferences preferences = Preferences.userRoot();

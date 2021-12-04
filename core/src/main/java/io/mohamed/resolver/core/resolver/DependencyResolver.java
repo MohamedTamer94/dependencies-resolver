@@ -23,7 +23,7 @@
 // -*- mode: java; c-basic-offset: 2; -*-
 package io.mohamed.resolver.core.resolver;
 
-import io.mohamed.resolver.core.VersionManager;
+import io.mohamed.resolver.core.util.VersionManager;
 import io.mohamed.resolver.core.callback.DependencyResolverCallback;
 import io.mohamed.resolver.core.callback.ResolveCallback;
 import io.mohamed.resolver.core.model.Dependency;
@@ -141,6 +141,14 @@ public class DependencyResolver {
       String groupID,
       String artifactId,
       Repository repository) {
+    DependencyVersion dependencyVersion = null;
+    try {
+      dependencyVersion =
+          VersionManager.getVersions(
+              new Dependency(groupID, artifactId, null), repository, dependencyResolverCallback);
+    } catch (ParserConfigurationException | SAXException e) {
+      e.printStackTrace();
+    }
     Pattern p = Pattern.compile(".*\\$\\{.*}.*");
     // create matcher for pattern p and given string
     Matcher m = p.matcher(str);
@@ -156,14 +164,8 @@ public class DependencyResolver {
         }
       }
       if (!propertyFound) {
-        try {
-          DependencyVersion dependencyVersion = VersionManager.getVersions(
-              new Dependency(groupID, artifactId, null), repository, dependencyResolverCallback);
-          if (dependencyVersion != null) {
-            str = dependencyVersion.getLatestVersion();
-          }
-        } catch (ParserConfigurationException | SAXException e) {
-          e.printStackTrace();
+        if (dependencyVersion != null) {
+          str = dependencyVersion.getLatestVersion();
         }
       }
     }
@@ -176,26 +178,35 @@ public class DependencyResolver {
     if (str.contains(",")) {
       String startVersion = str.split(",")[0].trim();
       String endVersion = str.split(",")[1].trim();
-      try {
-        DependencyVersion dependencyVersion = VersionManager.getVersions(
-                new Dependency(groupID, artifactId, null), repository, dependencyResolverCallback);
-        List<String> versions;
-        if (dependencyVersion != null) {
-          versions = dependencyVersion.getVersionNames();
-          String preferredVersion = null;
-          for (String version : versions) {
-            if (compareVersions(version, startVersion) == 1) {
-              if (compareVersions(version, endVersion) == -1) {
-                preferredVersion = version;
-                break;
-              }
+      List<String> versions;
+      if (dependencyVersion != null) {
+        versions = dependencyVersion.getVersionNames();
+        String preferredVersion = null;
+        for (String version : versions) {
+          if (compareVersions(version, startVersion) == 1) {
+            if (compareVersions(version, endVersion) == -1) {
+              preferredVersion = version;
+              break;
             }
           }
-          if (preferredVersion != null) return dependencyVersion.getLatestVersion();
         }
-        return startVersion;
-      } catch (ParserConfigurationException | SAXException e) {
-        return startVersion;
+        if (preferredVersion != null) return dependencyVersion.getLatestVersion();
+      }
+      str = startVersion;
+    }
+    for (Entry<Dependency, Dependency> dependencyEntry : loadedDependencies.entrySet()) {
+      Dependency dependency = new Dependency(groupID, artifactId, null);
+      if (dependencyEntry.getKey().compare(dependency, true)) {
+        // Dependency Version Conflict!
+        if (dependencyVersion != null) {
+          String versionToUse = str;
+          for (String version : dependencyVersion.getVersionNames()) {
+            if (compareVersions(versionToUse, version) == -1) {
+              versionToUse = version;
+            }
+          }
+          str = versionToUse;
+        }
       }
     }
     return str;

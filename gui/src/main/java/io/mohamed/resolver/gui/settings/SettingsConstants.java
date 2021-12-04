@@ -33,7 +33,5 @@ public class SettingsConstants {
   public static final String MERGE_LIBRARIES_SETTINGS_KEY = "mergeLibraries";
   public static final String JAR_ONLY_SETTINGS_KEY = "jarOnly";
   public static final String VERBOSE_SETTINGS_KEY = "verbose";
-  public static final String FILTER_APPINVENTOR_DEPENDENCIES_SETTINGS_KEY =
-      "filterAppinventorDependencies";
   public static final String JETIFY_SETTINGS_KEY = "jetify";
 }

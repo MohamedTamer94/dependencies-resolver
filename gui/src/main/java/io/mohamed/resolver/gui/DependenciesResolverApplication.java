@@ -101,8 +101,6 @@ public class DependenciesResolverApplication extends Application implements Init
   private ArrayList<String> repositories;
   // the jarOnly setting value
   private boolean jarOnly;
-  // the filter appinventor dependencies setting value
-  private boolean filterAppinventorDependencies;
   // the verbose setting value
   private boolean verbose;
   // the jetify libraries setting value
@@ -390,7 +388,6 @@ public class DependenciesResolverApplication extends Application implements Init
                       .setCallback(filesDownloadedCallback)
                       .setDependencyResolverCallback(dependencyResolverCallback)
                       .setDependencies(dependencyList)
-                      .setFilterAppInventorDependencies(filterAppinventorDependencies)
                       .setJarOnly(jarOnly)
                       .setMainDependency(finalDependency)
                       .setMerge(mergeLibraries)
@@ -448,12 +445,6 @@ public class DependenciesResolverApplication extends Application implements Init
     repositories =
         (ArrayList<String>)
             SettingsManager.getSettingForKey(SettingsConstants.REPOS_SETTING_KEY).getValue();
-    filterAppinventorDependencies =
-        Boolean.parseBoolean(
-            SettingsManager.getSettingForKey(
-                    SettingsConstants.FILTER_APPINVENTOR_DEPENDENCIES_SETTINGS_KEY)
-                .getValue()
-                .toString());
     verbose =
         Boolean.parseBoolean(
             SettingsManager.getSettingForKey(SettingsConstants.VERBOSE_SETTINGS_KEY)
