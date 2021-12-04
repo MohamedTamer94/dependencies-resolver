@@ -20,7 +20,7 @@
  *   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.mohamed.resolver.core.merge;
+package io.mohamed.resolver.core.merger;
 
 import com.android.ide.common.res2.MergingException;
 import com.android.manifmerger.ManifestMerger2.MergeFailureException;
